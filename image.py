@@ -114,13 +114,19 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
 
     def __init__(self,
                  gamma_shift_base=0,
-                 hls_shift_range=0,
+                 hue_shift_range=0,
+                 lightness_shift_range=0,
+                 saturation_shift_range=0,
                  autoencoder_mode=False,
                  minmax_standerdize=True,
                  minmax_from=(0, 255),
                  minmax_to=(0, 1)):
         self.gamma_shift_base = gamma_shift_base
-        self.hls_shift_range = hls_shift_range
+        if not (hue_shift_range or lightness_shift_range or saturation_shift_range):
+            self.hls_shift_range = 0
+        else:
+            self.hls_shift_range = [hue_shift_range, lightness_shift_range,
+                                    saturation_shift_range]
         self.autoencoder_mode = autoencoder_mode
         self.minmax_standerdize = minmax_standerdize
         self.minmax_from = minmax_from
@@ -151,7 +157,6 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
         return DirectoryIteratorFCN(
             directory_img, directory_tgt, self,
             target_size=target_size, color_mode=color_mode,
-            autoencoder_mode = self.autoencoder_mode,
             class_mode=class_mode, class_palette=class_palette,
             data_format=self.data_format,
             batch_size=batch_size, shuffle=shuffle, seed=seed,
@@ -206,7 +211,7 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
 
         if self.zca_whitening:
             if self.principal_components is not None:
-                flatx = np.reshape(x, (x.size))
+                flatx = np.reshape(x, x.size)
                 whitex = np.dot(flatx, self.principal_components)
                 x = np.reshape(whitex, (x.shape[0], x.shape[1], x.shape[2]))
             else:
@@ -229,6 +234,7 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
         if self.gamma_shift_base:
             gamma = self.gamma_shift_base ** np.random.uniform(-1., 1.)
             x = random_gamma_shift(x, gamma)
+        return x
 
     def random_transform_fcn(self, x, y, seed=None):
         """Randomly augment a single image tensor.
@@ -320,6 +326,7 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
 
         return x, y
 
+
 class NumpyArrayIteratorFCN(Iterator):
     """Iterator yielding data from a Numpy array.
 
@@ -341,7 +348,6 @@ class NumpyArrayIteratorFCN(Iterator):
         save_format: Format to use for saving sample images
             (if `save_to_dir` is set).
     """
-
     def __init__(self, x, y, image_data_generator,
                  class_mode='categorical', class_palette=None,
                  batch_size=32, shuffle=False, seed=None,
@@ -386,7 +392,7 @@ class NumpyArrayIteratorFCN(Iterator):
         self.save_to_dir = save_to_dir
         self.save_prefix = save_prefix
         self.save_format = save_format
-        super(NumpyArrayIterator, self).__init__(x.shape[0], batch_size, shuffle, seed)
+        super(NumpyArrayIteratorFCN, self).__init__(x.shape[0], batch_size, shuffle, seed)
 
     def next(self):
         """For python 2.x.
@@ -402,11 +408,11 @@ class NumpyArrayIteratorFCN(Iterator):
         # so it can be done in parallel
         batch_x = np.zeros(tuple([current_batch_size] + list(self.x.shape)[1:]), dtype=K.floatx())
         if self.channels_axis == 1:
-            batch_y = np.zeros((current_batch_size,) + (len(self.class_num),)
+            batch_y = np.zeros((current_batch_size,) + (self.class_num,)
                                + self.x.shape[2:4], dtype=K.floatx())
         else:
             batch_y = np.zeros((current_batch_size,) + self.x.shape[1:3]
-                               + (len(self.class_num),), dtype=K.floatx())
+                               + (self.class_num,), dtype=K.floatx())
         if self.autoencoder_mode:
             for i, j in enumerate(index_array):
                 x = self.x[j]
@@ -425,7 +431,7 @@ class NumpyArrayIteratorFCN(Iterator):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
                                                                       index=current_index + i,
-                                                                      hash=np.random.randint(1e4),
+                                                                      hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
         else:
@@ -458,13 +464,13 @@ class NumpyArrayIteratorFCN(Iterator):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
                                                                       index=current_index + i,
-                                                                      hash=np.random.randint(1e4),
+                                                                      hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
                     img = array_to_img(batch_y[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}_lbl.{format}'.format(prefix=self.save_prefix,
                                                                   index=current_index + i,
-                                                                  hash=np.random.randint(1e4),
+                                                                  hash=np.random.randint(10000),
                                                                   format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
 
@@ -641,13 +647,13 @@ class DirectoryIteratorFCN(Iterator):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
                                                                       index=current_index + i,
-                                                                      hash=np.random.randint(1e4),
+                                                                      hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
                     img = array_to_img(batch_y[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}_lbl.{format}'.format(prefix=self.save_prefix,
                                                                   index=current_index + i,
-                                                                  hash=np.random.randint(1e4),
+                                                                  hash=np.random.randint(10000),
                                                                   format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
         # build batch of labels
