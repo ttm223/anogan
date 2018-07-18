@@ -22,7 +22,8 @@ import cv2
 from glob import glob
 
 from keras import backend as K
-from keras.preprocessing.image_fcn import *
+from keras.preprocessing.image import *
+from keras.utils import to_categorical
 
 try:
     from PIL import Image as pil_image
@@ -113,14 +114,25 @@ def rgb_to_categorical(ary, palette, idx=None, dtype=np.float):
 class ImageDataGeneratorFCN(ImageDataGenerator):
 
     def __init__(self,
+                 rotation_range=0.,
+                 width_shift_range=0.,
+                 height_shift_range=0.,
+                 shear_range=0.,
+                 zoom_range=0.,
+                 fill_mode='nearest',
+                 cval=0.,
+                 horizontal_flip=False,
+                 vertical_flip=False,
                  gamma_shift_base=0,
                  hue_shift_range=0,
                  lightness_shift_range=0,
                  saturation_shift_range=0,
                  autoencoder_mode=False,
+                 cnn_mode=False,
                  minmax_standerdize=True,
                  minmax_from=(0, 255),
-                 minmax_to=(0, 1)):
+                 minmax_to=(0, 1)) :
+
         self.gamma_shift_base = gamma_shift_base
         if not (hue_shift_range or lightness_shift_range or saturation_shift_range):
             self.hls_shift_range = 0
@@ -128,16 +140,59 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
             self.hls_shift_range = [hue_shift_range, lightness_shift_range,
                                     saturation_shift_range]
         self.autoencoder_mode = autoencoder_mode
+        self.cnn_mode = cnn_mode
         self.minmax_standerdize = minmax_standerdize
         self.minmax_from = minmax_from
         self.minmax_to = minmax_to
 
-        super(ImageDataGeneratorFCN, self).__init__()
+        super(ImageDataGeneratorFCN, self).__init__(
+            rotation_range=rotation_range,
+            width_shift_range=width_shift_range,
+            height_shift_range=height_shift_range,
+            shear_range=shear_range,
+            zoom_range=zoom_range,
+            fill_mode=fill_mode,
+            cval=cval,
+            horizontal_flip=horizontal_flip,
+            vertical_flip=vertical_flip)
+
+    def batch_gen(self, x, y, batch_size=32, shuffle=True, seed=None,
+                  save_to_dir=None, save_prefix='', save_format='png'):
+        nai = NumpyArrayIteratorFCN(
+                self, x, y,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                seed=seed,
+                data_format=self.data_format,
+                save_to_dir=save_to_dir,
+                save_prefix=save_prefix,
+                save_format=save_format)
+        return nai.next()
+
+    def batch_gen_from_dir(self, path_img, path_tgt,
+                           target_size=(256, 256), color_mode='rgb',
+                           class_mode='categorical', class_palette=None,
+                           batch_size=32, shuffle=True, seed=None,
+                           save_to_dir=None,
+                           save_prefix='',
+                           save_format='png',
+                           follow_links=False):
+        di = DirectoryIteratorFCN(
+            self, path_img, path_tgt,
+            target_size=target_size, color_mode=color_mode,
+            class_mode=class_mode, class_palette=class_palette,
+            data_format=self.data_format,
+            batch_size=batch_size, shuffle=shuffle, seed=seed,
+            save_to_dir=save_to_dir,
+            save_prefix=save_prefix,
+            save_format=save_format,
+            follow_links=follow_links)
+        return di.next()
 
     def flow_fcn(self, x, y, batch_size=32, shuffle=True, seed=None,
                  save_to_dir=None, save_prefix='', save_format='png'):
-        return NumpyArrayIterator(
-            x, y, self,
+        return NumpyArrayIteratorFCN(
+            self, x, y,
             batch_size=batch_size,
             shuffle=shuffle,
             seed=seed,
@@ -146,7 +201,7 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
             save_prefix=save_prefix,
             save_format=save_format)
 
-    def flow_from_directory_fcn(self, directory_img, directory_tgt,
+    def flow_from_directory_fcn(self, path_img, path_tgt,
                                 target_size=(256, 256), color_mode='rgb',
                                 class_mode='categorical', class_palette=None,
                                 batch_size=32, shuffle=True, seed=None,
@@ -155,7 +210,7 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
                                 save_format='png',
                                 follow_links=False):
         return DirectoryIteratorFCN(
-            directory_img, directory_tgt, self,
+            self, path_img, path_tgt,
             target_size=target_size, color_mode=color_mode,
             class_mode=class_mode, class_palette=class_palette,
             data_format=self.data_format,
@@ -348,7 +403,8 @@ class NumpyArrayIteratorFCN(Iterator):
         save_format: Format to use for saving sample images
             (if `save_to_dir` is set).
     """
-    def __init__(self, x, y, image_data_generator,
+    def __init__(self, image_data_generator, x, y=None,
+                 autoencoder_mode=False, cnn_mode=False,
                  class_mode='categorical', class_palette=None,
                  batch_size=32, shuffle=False, seed=None,
                  data_format=None,
@@ -373,8 +429,14 @@ class NumpyArrayIteratorFCN(Iterator):
                              'with shape', self.x.shape)
         self.channels_axis = 3 if data_format == 'channels_last' else 1
         if y is None:
-            self.autoencoder_mode = True
-            self.class_num = x.shape[self.channels_axis]
+            if autoencoder_mode:
+                self.autoencoder_mode = autoencoder_mode
+                self.cnn_mode = False
+                self.class_num = x.shape[self.channels_axis]
+            elif cnn_mode:
+                self.autoencoder_mode = False
+                self.cnn_mode = cnn_mode
+                self.y = y
         else:
             self.autoencoder_mode = False
             self.y = y
@@ -434,6 +496,29 @@ class NumpyArrayIteratorFCN(Iterator):
                                                                       hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
+        elif self.cnn_mode:
+            categorical = self.class_mode == 'categorical'
+            for i, j in enumerate(index_array):
+                x = self.x[j]
+                if x.shape[self.channels_axis - 1] > 2:
+                    if self.channels_axis == 1:
+                        x = x.transpose(1, 2, 0)
+                    x[:, :, :3] = self.image_data_generator.random_hls_gamma(x[:, :, :3])
+                    if self.channels_axis == 1:
+                        x = x.transpose(2, 0, 1)
+                x = self.image_data_generator.random_transform(x.astype(K.floatx()))
+                x = self.image_data_generator.standardize_fcn(x)
+            if self.save_to_dir:
+                for i in range(current_batch_size):
+                    img = array_to_img(batch_x[i], self.data_format, scale=True)
+                    fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
+                                                                      index=current_index + i,
+                                                                      hash=np.random.randint(10000),
+                                                                      format=self.save_format)
+                    img.save(os.path.join(self.save_to_dir, fname))
+            batch_y = self.y[index_array]
+            if categorical:
+                batch_y = to_categorical(batch_y)
         else:
             categorical = self.class_mode == 'categorical'
             for i, j in enumerate(index_array):
@@ -514,8 +599,9 @@ class DirectoryIteratorFCN(Iterator):
             (if `save_to_dir` is set).
     """
 
-    def __init__(self, directory_img, directory_tgt,
-                 image_data_generator,
+    def __init__(self, image_data_generator,
+                 path_img, path_tgt=None,
+                 autoencoder_mode=False, cnn_mode=False,
                  target_size=(256, 256), color_mode='rgb',
                  class_mode='binary', class_palette=None,
                  batch_size=32, shuffle=True, seed=None,
@@ -524,12 +610,14 @@ class DirectoryIteratorFCN(Iterator):
                  follow_links=False):
         if data_format is None:
             data_format = K.image_data_format()
-        self.directory_img = directory_img
-        self.directory_tgt = directory_tgt
-        if self.directory_tgt is None:
-            self.autoencoder_mode = True
+        self.path_img = path_img
+        self.path_tgt = path_tgt
+        if path_tgt is None:
+            self.autoencoder_mode = autoencoder_mode
+            self.cnn_mode = cnn_mode
         else:
             self.autoencoder_mode = False
+            self.cnn_mode = False
         self.image_data_generator = image_data_generator
         self.target_size = tuple(target_size)
         if color_mode not in {'rgb', 'grayscale'}:
@@ -574,14 +662,25 @@ class DirectoryIteratorFCN(Iterator):
 
         self.name_img = []
         self.name_tgt = []
-
-        for ext in white_list_formats:
-            self.name_img += [os.path.basename(r) for r in glob(os.path.join(directory_img, ext))]
-            if self.autoencoder_mode:
-                self.name_tgt += [os.path.basename(r) for r in glob(os.path.join(directory_tgt, ext))]
-            else:
-                self.name_tgt = None
-        if len(self.name_img) == len(glob(directory_tgt)) or self.autoencoder_mode:
+        if hasattr(path_img, '__iter__'):
+            self.name_img += [os.path.basename(r) for r in self.path_img]
+            if not self.autoencoder_mode:
+                self.name_img += [os.path.basename(r) for r in self.path_tgt]
+        else:
+            tmp_img = []
+            tmp_tgt = []
+            for ext in white_list_formats:
+                tmp_img += glob(os.path.join(self.path_img, '*.' + ext))
+                self.name_img += [os.path.basename(r) for r in tmp_img]
+                if self.autoencoder_mode:
+                    self.tmp_tgt = None
+                    self.name_tgt = None
+                else:
+                    tmp_tgt += glob(os.path.join(self.path_tgt, '*.' + ext))
+                    self.name_tgt += [os.path.basename(r) for r in tmp_tgt]
+                self.path_img = tmp_tgt
+                self.path_tgt = tmp_tgt
+        if len(self.name_img) == len(self.name_tgt) or self.autoencoder_mode:
             self.samples = len(self.name_img)
         else:
             raise ValueError('invalid data number',
@@ -613,7 +712,7 @@ class DirectoryIteratorFCN(Iterator):
         if self.autoencoder_mode:
             for i, j in enumerate(index_array):
                 fname = self.name_img[j]
-                img = load_to_array(os.path.join(self.directory_img, fname),
+                img = load_to_array(os.path.join(self.path_img),
                                     grayscale=grayscale, target_size=self.target_size)
                 if not grayscale:
                     img = self.image_data_generator.random_hls_gamma(img)
@@ -622,16 +721,28 @@ class DirectoryIteratorFCN(Iterator):
                 img = self.image_data_generator.standardize_fcn(img)
                 batch_x[i] = img
                 batch_y[i] = img
+        if self.cnn_mode:
+            for i, j in enumerate(index_array):
+                fname = self.name_img[j]
+                img = load_to_array(os.path.join(self.path_img),
+                                    grayscale=grayscale, target_size=self.target_size)
+                if not grayscale:
+                    img = self.image_data_generator.random_hls_gamma(img)
+                img = img.astype(K.floatx())
+                img = self.image_data_generator.random_transform(img)
+                img = self.image_data_generator.standardize_fcn(img)
+                batch_x[i] = img
+                batch_y[i] = None
         else:
             for i, j in enumerate(index_array):
                 fname = self.name_img[j]
-                img = load_to_array(os.path.join(self.directory_img, fname),
+                img = load_to_array(os.path.join(self.path_img),
                                     grayscale=grayscale, target_size=self.target_size)
                 if not grayscale:
                     img = self.image_data_generator.random_hls_gamma(img)
                 img = img.astype(K.floatx())
                 fname = self.name_tgt[j]
-                tgt = load_to_array(os.path.join(self.directory_img, fname),
+                tgt = load_to_array(os.path.join(self.path_img),
                                     grayscale=binary, target_size=self.target_size)
                 if not binary:
                     tgt = rgb_to_categorical(tgt, self.class_palette, dtype=K.floatx())
