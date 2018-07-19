@@ -5,17 +5,12 @@ from __future__ import print_function
 
 import numpy as np
 import re
-from scipy import linalg
 import scipy.ndimage as ndi
 from six.moves import range
 import os
-import threading
 import warnings
-import multiprocessing.pool
-from functools import partial
 
 # Additional
-from skimage import data, img_as_float
 from skimage.exposure import adjust_gamma
 from skimage import io
 import cv2
@@ -64,28 +59,27 @@ def load_to_array(path, grayscale=False, target_size=None):
 
 
 def rgb_to_categorical(ary, palette, idx=None, dtype=np.float):
-    # 変換したいデータのnumpy arrayへの変換
-    ary = np.array(ary, dtype=np.int)  # uint8だとオーバーフローするのでintに変換
+    # dtype to int64 preventing overflow
+    ary = np.array(ary, dtype=np.int64)
     ary_dim = ary.ndim
-    # パレット情報がDictionaryである場合のデータ読み込み
+    # get data from palette dict
     if isinstance(palette, dict):
-        idx = list(palette.keys())  # Keyをcolor indexとして読み込む
+        idx = list(palette.keys())  # key as index number
         idx = np.array(idx)
-        palette = list(palette.values())  # ValueをRGBとして読み込む
+        palette = list(palette.values())  # value as rgb value
     palette = np.array(palette, dtype=np.int)
     pl_dim = palette.ndim
 
-    # 末尾の次元が3の場合RGB画像と判断して、
-    # 3channlesから1channel(HTML表記の10進数版)へ変換
+    # in rgb image, transform rgb to HTML color index at decimal
     if ary.shape[ary_dim - 1] == 3:
         coeff = np.logspace(2, 0, num=3, base=16).astype(np.int)
-        # HTML表記を10進数に直した形にする計算のための係数
+        # rgb to HTML color index at decimal
         r_tuple = np.ones(ary_dim - 1, dtype=np.int)
         r_tuple = tuple(r_tuple) + (3,)
-        coeff = coeff.reshape(r_tuple)  # 念のためaryの最終次元に合うよう係数行列を変形
-        ary = (ary * coeff).sum(axis=ary_dim - 1)  # 積をとって形式を変更
+        coeff = coeff.reshape(r_tuple)  # reshape to the same dimension as input array
+        ary = (ary * coeff).sum(axis=ary_dim - 1)
 
-    # aryと同じ処理をpaletteにも実施
+    # the same process array to palette
     if palette.shape[pl_dim - 1] == 3:
         coeff = np.logspace(2, 0, num=3, base=16).astype(np.int)
         r_tuple = np.ones(pl_dim - 1, dtype=np.int)
@@ -93,20 +87,21 @@ def rgb_to_categorical(ary, palette, idx=None, dtype=np.float):
         coeff = coeff.reshape(r_tuple)
         palette = (palette * coeff).sum(axis=pl_dim - 1)
 
-    # paletteの次元が1より大きい場合はflatten
+    # reshape palette to 1D
     if palette.ndim > 1:
         palette = palette.ravel()
 
-    # indexが与えられていない場合paletteのパレットの指定順をindexとする
+    # in case of no index, set index parette index
     if idx is None:
         idx = np.arange(palette.shape[0])
 
     n_idx = idx.shape[0]
 
+    # transform to categorical
     rs_ary = ary.shape + (1,)
-    ary = ary.reshape(rs_ary)  # 末尾に次元を増やしておく
-    ary = np.tile(ary, n_idx)  # indexの数までコピーしておく
-    ary = np.where(ary == palette, 1, 0).astype(dtype)  # aryとpaletteとの一致不一致を判定
+    ary = ary.reshape(rs_ary)
+    ary = np.tile(ary, n_idx)
+    ary = np.where(ary == palette, 1, 0).astype(dtype)
 
     return ary
 
@@ -142,8 +137,10 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
         self.autoencoder_mode = autoencoder_mode
         self.cnn_mode = cnn_mode
         self.minmax_standerdize = minmax_standerdize
-        self.minmax_from = minmax_from
-        self.minmax_to = minmax_to
+        self.max_from = np.max(np.array(minmax_from))
+        self.min_from = np.min(np.array(minmax_from))
+        self.max_to = np.max(np.array(minmax_to))
+        self.min_to = np.min(np.array(minmax_to))
 
         super(ImageDataGeneratorFCN, self).__init__(
             rotation_range=rotation_range,
@@ -189,10 +186,12 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
             follow_links=follow_links)
         return di.next()
 
-    def flow_fcn(self, x, y, batch_size=32, shuffle=True, seed=None,
+    def flow_fcn(self, x, y, batch_size=32,  class_mode='categorical',
+                 class_palette=None, shuffle=True, seed=None,
                  save_to_dir=None, save_prefix='', save_format='png'):
         return NumpyArrayIteratorFCN(
             self, x, y,
+            class_mode=class_mode, class_palette=class_palette,
             batch_size=batch_size,
             shuffle=shuffle,
             seed=seed,
@@ -235,9 +234,9 @@ class ImageDataGeneratorFCN(ImageDataGenerator):
             x *= self.rescale
 
         if self.minmax_standerdize:
-            x = (x - self.minmax_from[0]
-                 / (self.minmax_from[1] - self.minmax_from[0]))
-            x = x * (self.minmax_to[1] - self.minmax_to[0]) + self.minmax_to[0]
+            x = ((x - self.min_from)
+                 / (self.max_from - self.min_from))
+            x = x * (self.max_to - self.min_to) + self.min_to
 
         # x is a single image, so it doesn't have image number at index 0
         img_channel_axis = self.channel_axis - 1
@@ -404,7 +403,6 @@ class NumpyArrayIteratorFCN(Iterator):
             (if `save_to_dir` is set).
     """
     def __init__(self, image_data_generator, x, y=None,
-                 autoencoder_mode=False, cnn_mode=False,
                  class_mode='categorical', class_palette=None,
                  batch_size=32, shuffle=False, seed=None,
                  data_format=None,
@@ -429,16 +427,17 @@ class NumpyArrayIteratorFCN(Iterator):
                              'with shape', self.x.shape)
         self.channels_axis = 3 if data_format == 'channels_last' else 1
         if y is None:
-            if autoencoder_mode:
-                self.autoencoder_mode = autoencoder_mode
+            if image_data_generator.autoencoder_mode:
+                self.autoencoder_mode = image_data_generator.autoencoder_mode
                 self.cnn_mode = False
                 self.class_num = x.shape[self.channels_axis]
-            elif cnn_mode:
+            elif image_data_generator.cnn_mode:
                 self.autoencoder_mode = False
-                self.cnn_mode = cnn_mode
+                self.cnn_mode = image_data_generator.cnn_mode
                 self.y = y
         else:
             self.autoencoder_mode = False
+            self.cnn_mode = False
             self.y = y
             self.class_num = len(self.class_palette)
         # if self.x.shape[channels_axis] not in {1, 3, 4}:
@@ -465,15 +464,15 @@ class NumpyArrayIteratorFCN(Iterator):
         # Keeps under lock only the mechanism which advances
         # the indexing of each batch.
         with self.lock:
-            index_array, current_index, current_batch_size = next(self.index_generator)
+            index_array = next(self.index_generator)
         # The transformation of images is not under thread lock
         # so it can be done in parallel
-        batch_x = np.zeros(tuple([current_batch_size] + list(self.x.shape)[1:]), dtype=K.floatx())
+        batch_x = np.zeros(((len(index_array),) + self.x.shape[1:]), dtype=K.floatx())
         if self.channels_axis == 1:
-            batch_y = np.zeros((current_batch_size,) + (self.class_num,)
+            batch_y = np.zeros((len(index_array),) + (self.class_num,)
                                + self.x.shape[2:4], dtype=K.floatx())
         else:
-            batch_y = np.zeros((current_batch_size,) + self.x.shape[1:3]
+            batch_y = np.zeros((len(index_array),) + self.x.shape[1:3]
                                + (self.class_num,), dtype=K.floatx())
         if self.autoencoder_mode:
             for i, j in enumerate(index_array):
@@ -489,10 +488,10 @@ class NumpyArrayIteratorFCN(Iterator):
                 batch_x[i] = x
                 batch_y[i] = x
             if self.save_to_dir:
-                for i in range(current_batch_size):
+                for i, j in enumerate(index_array):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
-                                                                      index=current_index + i,
+                                                                      index=j,
                                                                       hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
@@ -509,10 +508,10 @@ class NumpyArrayIteratorFCN(Iterator):
                 x = self.image_data_generator.random_transform(x.astype(K.floatx()))
                 x = self.image_data_generator.standardize_fcn(x)
             if self.save_to_dir:
-                for i in range(current_batch_size):
+                for i, j in enumerate(index_array):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
-                                                                      index=current_index + i,
+                                                                      index=j,
                                                                       hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
@@ -545,16 +544,16 @@ class NumpyArrayIteratorFCN(Iterator):
                 batch_y[i] = y
 
             if self.save_to_dir:
-                for i in range(current_batch_size):
+                for i, j in enumerate(index_array):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
-                                                                      index=current_index + i,
+                                                                      index=j,
                                                                       hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
                     img = array_to_img(batch_y[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}_lbl.{format}'.format(prefix=self.save_prefix,
-                                                                  index=current_index + i,
+                                                                  index=j,
                                                                   hash=np.random.randint(10000),
                                                                   format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
@@ -601,7 +600,6 @@ class DirectoryIteratorFCN(Iterator):
 
     def __init__(self, image_data_generator,
                  path_img, path_tgt=None,
-                 autoencoder_mode=False, cnn_mode=False,
                  target_size=(256, 256), color_mode='rgb',
                  class_mode='binary', class_palette=None,
                  batch_size=32, shuffle=True, seed=None,
@@ -612,9 +610,9 @@ class DirectoryIteratorFCN(Iterator):
             data_format = K.image_data_format()
         self.path_img = path_img
         self.path_tgt = path_tgt
-        if path_tgt is None:
-            self.autoencoder_mode = autoencoder_mode
-            self.cnn_mode = cnn_mode
+        if self.path_tgt is None:
+            self.autoencoder_mode = image_data_generator.autoencoder_mode
+            self.cnn_mode = image_data_generator.cnn_mode
         else:
             self.autoencoder_mode = False
             self.cnn_mode = False
@@ -662,29 +660,33 @@ class DirectoryIteratorFCN(Iterator):
 
         self.name_img = []
         self.name_tgt = []
-        if hasattr(path_img, '__iter__'):
+        if hasattr(path_img, '__iter__') and (not isinstance(path_img, str)):
             self.name_img += [os.path.basename(r) for r in self.path_img]
             if not self.autoencoder_mode:
-                self.name_img += [os.path.basename(r) for r in self.path_tgt]
+                self.name_tgt += [os.path.basename(r) for r in self.path_tgt]
         else:
             tmp_img = []
             tmp_tgt = []
             for ext in white_list_formats:
-                tmp_img += glob(os.path.join(self.path_img, '*.' + ext))
-                self.name_img += [os.path.basename(r) for r in tmp_img]
+                ip = glob(os.path.join(self.path_img, '*.' + ext))
+                ip.sort()
+                tmp_img += ip
+                self.name_img += [os.path.basename(r) for r in ip]
                 if self.autoencoder_mode:
                     self.tmp_tgt = None
                     self.name_tgt = None
                 else:
-                    tmp_tgt += glob(os.path.join(self.path_tgt, '*.' + ext))
-                    self.name_tgt += [os.path.basename(r) for r in tmp_tgt]
-                self.path_img = tmp_tgt
-                self.path_tgt = tmp_tgt
+                    lp = glob(os.path.join(self.path_img, '*.' + ext))
+                    lp.sort()
+                    tmp_img += lp
+                    self.name_tgt += [os.path.basename(r) for r in lp]
+            self.path_img = tmp_img
+            self.path_tgt = tmp_tgt
         if len(self.name_img) == len(self.name_tgt) or self.autoencoder_mode:
             self.samples = len(self.name_img)
         else:
             raise ValueError('invalid data number',
-                             'data number {} target number {}'
+                             'data number {} target number {} '
                              'these number should be the '
                              'same.'.format(len(self.name_img),
                                             len(self.name_tgt)))
@@ -700,11 +702,11 @@ class DirectoryIteratorFCN(Iterator):
             The next batch.
         """
         with self.lock:
-            index_array, current_index, current_batch_size = next(self.index_generator)
+            index_array = next(self.index_generator)
         # The transformation of images is not under thread lock
         # so it can be done in parallel
-        batch_x = np.zeros((current_batch_size,) + self.image_shape, dtype=K.floatx())
-        batch_y = np.zeros((current_batch_size,) + self.target_size
+        batch_x = np.zeros((len(index_array),) + self.image_shape, dtype=K.floatx())
+        batch_y = np.zeros((len(index_array),) + self.target_size
                            + (self.num_class,), dtype=K.floatx())
         grayscale = self.color_mode == 'grayscale'
         binary = self.class_mode == 'binary'
@@ -712,7 +714,7 @@ class DirectoryIteratorFCN(Iterator):
         if self.autoencoder_mode:
             for i, j in enumerate(index_array):
                 fname = self.name_img[j]
-                img = load_to_array(os.path.join(self.path_img),
+                img = load_to_array(self.path_img[j],
                                     grayscale=grayscale, target_size=self.target_size)
                 if not grayscale:
                     img = self.image_data_generator.random_hls_gamma(img)
@@ -721,10 +723,10 @@ class DirectoryIteratorFCN(Iterator):
                 img = self.image_data_generator.standardize_fcn(img)
                 batch_x[i] = img
                 batch_y[i] = img
-        if self.cnn_mode:
+        elif self.cnn_mode:
             for i, j in enumerate(index_array):
                 fname = self.name_img[j]
-                img = load_to_array(os.path.join(self.path_img),
+                img = load_to_array(self.path_img[j],
                                     grayscale=grayscale, target_size=self.target_size)
                 if not grayscale:
                     img = self.image_data_generator.random_hls_gamma(img)
@@ -736,13 +738,13 @@ class DirectoryIteratorFCN(Iterator):
         else:
             for i, j in enumerate(index_array):
                 fname = self.name_img[j]
-                img = load_to_array(os.path.join(self.path_img),
+                img = load_to_array(self.path_img[j],
                                     grayscale=grayscale, target_size=self.target_size)
                 if not grayscale:
                     img = self.image_data_generator.random_hls_gamma(img)
                 img = img.astype(K.floatx())
                 fname = self.name_tgt[j]
-                tgt = load_to_array(os.path.join(self.path_img),
+                tgt = load_to_array(self.path_tgt[j],
                                     grayscale=binary, target_size=self.target_size)
                 if not binary:
                     tgt = rgb_to_categorical(tgt, self.class_palette, dtype=K.floatx())
@@ -754,16 +756,16 @@ class DirectoryIteratorFCN(Iterator):
                 batch_y[i] = tgt
             # optionally save augmented images to disk for debugging purposes
             if self.save_to_dir:
-                for i in range(current_batch_size):
+                for i, j in enumerate(index_array):
                     img = array_to_img(batch_x[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}.{format}'.format(prefix=self.save_prefix,
-                                                                      index=current_index + i,
+                                                                      index=j,
                                                                       hash=np.random.randint(10000),
                                                                       format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
                     img = array_to_img(batch_y[i], self.data_format, scale=True)
                     fname = '{prefix}_{index}_{hash}_lbl.{format}'.format(prefix=self.save_prefix,
-                                                                  index=current_index + i,
+                                                                  index=j,
                                                                   hash=np.random.randint(10000),
                                                                   format=self.save_format)
                     img.save(os.path.join(self.save_to_dir, fname))
