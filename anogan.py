@@ -36,7 +36,7 @@ class anoGAN(object):
     param_names = ['batch_size', 'd_lr', 'd_optim', 'data_ch',
                    'data_size', 'epoch', 'g_lr', 'g_optim',
                    'image_dir', 'latent_size', 'loss_lambda',
-                   'max_filters', 'target_dir']
+                   'max_filters', 'save_dir']
     white_list = {'bmp', 'jpg', 'jpeg', 'png'}
 
     def __init__(self):
@@ -76,10 +76,16 @@ class anoGAN(object):
         for key, value in params_dict.items():
             if key in self.param_names:
                 setattr(self, key, value)
-        if isinstance(self.d_optim, str):
-            self.d_optim = self._fetch_optim(self.d_optim)
-        if isinstance(self.g_optim, str):
-            self.g_optim = self._fetch_optim(self.g_optim)
+        self.d_optim = self._fetch_optim(self.d_optim)
+        self.g_optim = self._fetch_optim(self.g_optim)
+
+    def _save_yaml(self):
+        yaml_path = join(self.save_dir, 'params.yaml')
+        params_dict = {}
+        for param in self.param_names:
+            params_dict.update({param: getattr(self, param)})
+        with open(yaml_path) as f:
+            f.write(yaml.dump(params_dict))
 
     def _set_trainable(self, model, trainable=False):
         model.trainable = trainable
@@ -90,7 +96,6 @@ class anoGAN(object):
         for layer in layers:
             self._set_trainable(layer, trainable)
 
-    @property
     def Generator_model(self):
         '''
         :return: generator model
@@ -162,7 +167,7 @@ class anoGAN(object):
         '''
         :return: gan model
         '''
-        discriminator.trainable = False
+        self._set_trainable(discriminator, trainable=False)
         input_gan = Input(shape=(self.latent_size,))
         x_gan = generator(input_gan)
         output_gan = discriminator(x_gan)
@@ -173,7 +178,7 @@ class anoGAN(object):
     def Feature_model(self, discriminator):
         model = Model(inputs=discriminator.layer[0].input,
                       outputs=discriminator.layers[-10].output)
-        model.trainable = False
+        self._set_trainable(model, trainable=False)
 
         return model
 
@@ -197,6 +202,7 @@ class anoGAN(object):
     def train(self, yaml_path):
 
         self._set_params(yaml_path)
+        self._save_yaml()
         size = (self.data_size, self.data_size)
 
         d = self.Discriminator_model()
