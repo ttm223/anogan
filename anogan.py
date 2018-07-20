@@ -136,13 +136,13 @@ class anoGAN(object):
         '''
         :return: discriminator model
         '''
-        size_predense = self.data_size // (2 ** self.n_convs)
+        size_predense = self.data_size // np.sqrt(self.max_filters * 2).astype(np.int)
         filter_sets = 2 * self.max_filters // 2 ** np.arange(self.n_convs + 1)[::-1]
 
         input_dis = Input(shape=(self.data_size, self.data_size, self.data_ch))
         x_dis = input_dis
 
-        for n in filter_sets[:-1]:
+        for n in filter_sets:
             x_dis = Conv2D(n, (5, 5), strides=(2, 2), padding='same')(x_dis)
             x_dis = BatchNormalization()(x_dis)
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
