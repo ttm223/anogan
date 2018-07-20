@@ -686,7 +686,7 @@ class DirectoryIteratorFCN(Iterator):
                     self.name_tgt += [os.path.basename(r) for r in lp]
             self.path_img = tmp_img
             self.path_tgt = tmp_tgt
-        if len(self.name_img) == len(self.name_tgt) or self.autoencoder_mode:
+        if len(self.name_img) == len(self.name_tgt) or self.autoencoder_mode or self.cnn_mode:
             self.samples = len(self.name_img)
         else:
             raise ValueError('invalid data number',
