@@ -102,8 +102,8 @@ class anoGAN(object):
         '''
         :return: generator model
         '''
-        resize_size = self.data_size // np.sqrt(self.max_filters * 2)
-        filter_sets = self.max_filters // 2 ** np.arange(self.n_convs)[::-1]
+        resize_size = self.data_size // np.sqrt(self.max_filters * 2).astype(np.int)
+        filter_sets = self.max_filters // 2 ** np.arange(self.n_convs)
 
         input_gen = Input(shape=(self.latent_size,))
 
@@ -137,7 +137,7 @@ class anoGAN(object):
         :return: discriminator model
         '''
         size_predense = self.data_size // (2 ** self.n_convs)
-        filter_sets = self.max_filters * 2 ** np.arange(self.n_convs + 1)
+        filter_sets = 2 * self.max_filters // 2 ** np.arange(self.n_convs + 1)[::-1]
 
         input_dis = Input(shape=(self.data_size, self.data_size, self.data_ch))
         x_dis = input_dis
