@@ -244,7 +244,6 @@ class anoGAN(object):
             real_path = []
             for ext in self.white_list:
                 real_path += glob(join(self.image_dir, '*.' + ext))
-                print(real_path)
             n_iter = len(real_path) // self.batch_size
             g_flow = generator.flow_from_directory_fcn(
                     real_path, None,
