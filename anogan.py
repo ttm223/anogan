@@ -143,7 +143,7 @@ class anoGAN(object):
         x_dis = input_dis
 
         for n in filter_sets[:-1]:
-            x_dis = Conv2D(n, (5, 5), stride=(2, 2), padding='same')(x_dis)
+            x_dis = Conv2D(n, (5, 5), strides=(2, 2), padding='same')(x_dis)
             x_dis = BatchNormalization()(x_dis)
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
