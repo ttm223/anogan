@@ -84,7 +84,7 @@ class anoGAN(object):
         params_dict = {}
         for param in self.param_names:
             params_dict.update({param: getattr(self, param)})
-        with open(yaml_path) as f:
+        with open(yaml_path, mode='w') as f:
             f.write(yaml.dump(params_dict))
 
     def _set_trainable(self, model, trainable=False):
