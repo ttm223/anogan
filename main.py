@@ -1,7 +1,10 @@
 # anoGAN test
+import anogan
 
-import tensorflow as tf
-import keras
-import numpy as np
-import cv2
+def main():
+    yaml_path = input('input yaml file path')
+    ano = anogan.anoGAN
+    g_model, d_model = ano.train(yaml_path)
 
+if __name__ == '__main__':
+    main()
