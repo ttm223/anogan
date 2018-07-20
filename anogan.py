@@ -215,10 +215,10 @@ class anoGAN(object):
         gan = self.GAN_model(generator=g, discriminator=d)
         g.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
         g.summary()
-        gan.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
+        gan.compile(loss='binary_crossentropy', optimizer=self.g_optim(lr=self.g_lr))
         gan.summary()
         d.trainable = True
-        d.compile(loss='mse', optimizer=self.d_optim(lr=self.d_lr))
+        d.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
         d.summary()
 
         generator = ImageDataGeneratorFCN(rotation_range=0.,
