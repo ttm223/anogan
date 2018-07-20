@@ -212,7 +212,7 @@ class anoGAN(object):
 
         d = self.Discriminator_model()
         g = self.Generator_model()
-        gan = self.GAN_model(d, g)
+        gan = self.GAN_model(generator=g, discriminator=d)
         g.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
         g.summary()
         gan.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
@@ -254,22 +254,26 @@ class anoGAN(object):
                     save_prefix='',
                     save_format='png',
                     follow_links=False)
+            print('input data: {}'.format(len(real_path)))
         else:
             ext = ['png', 'jpg', 'jpeg', 'bmp']
             images, _, _ = load_data(self.image_dir, ext=ext,
                                      color_mode='color', dtype=np.float32,
                                      size=size, resize_type='ec',
                                      load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl',)
+            n_iter = len(images) // self.batch_size
             g_flow = generator.flow_fcn(images, None, batch_size=self.batch_size,  class_mode='categorical',
                                         class_palette=None, shuffle=True, seed=None,
                                         save_to_dir=None, save_prefix='', save_format='png')
+            print('input data: {}'.format(len(images)))
 
         for ep in range(self.epoch):
-            print('Epoch: {}/{}'.format(ep, self.epoch))
+            print('Epoch: {}/{}'.format(ep + 1, self.epoch))
 
             progress_bar = Progbar(target=n_iter)
 
             for idx in range(n_iter):
+                print('iter {}/{}'.format(idx + 1, n_iter))
                 noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
 
                 real_img, _ = g_flow.next()
