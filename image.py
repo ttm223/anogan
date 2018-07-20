@@ -613,9 +613,17 @@ class DirectoryIteratorFCN(Iterator):
         if self.path_tgt is None:
             self.autoencoder_mode = image_data_generator.autoencoder_mode
             self.cnn_mode = image_data_generator.cnn_mode
+            if color_mode == 'rgb':
+                self.num_class = 3
+            else:
+                self.num_class = 1
         else:
             self.autoencoder_mode = False
             self.cnn_mode = False
+            if class_mode == 'categorical':
+                self.num_class = len(self.class_palette)
+            else:
+                self.num_class = 1
         self.image_data_generator = image_data_generator
         self.target_size = tuple(target_size)
         if color_mode not in {'rgb', 'grayscale'}:
@@ -625,10 +633,6 @@ class DirectoryIteratorFCN(Iterator):
         self.class_palette = class_palette
         self.data_format = data_format
 
-        if class_mode == 'categorical':
-            self.num_class = len(self.class_palette)
-        else:
-            self.num_class = 1
         if self.color_mode == 'rgb':
             if self.data_format == 'channels_last':
                 self.image_shape = self.target_size + (3,)
