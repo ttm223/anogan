@@ -202,11 +202,16 @@ class anoGAN(object):
     def train(self, yaml_path):
 
         self._set_params(yaml_path)
+
+        if not exists(self.save_dir):
+            os.makedirs(self.save_dir)
+            os.chmod(self.save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
+
         self._save_yaml()
         size = (self.data_size, self.data_size)
 
         d = self.Discriminator_model()
-        g = self.Generator_model
+        g = self.Generator_model()
         gan = self.GAN_model(d, g)
         g.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
         gan.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
@@ -279,10 +284,6 @@ class anoGAN(object):
 
                 progress_bar.update(idx, values=[('g', g_loss), ('d', d_loss)])
             print('')
-
-            if not exists(self.save_dir):
-                os.makedirs(self.save_dir)
-                os.chmod(self.save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
 
             g.save_weights(join(self.save_dir, 'g_weights.h5'), True)
             d.save_weights(join(self.save_dir, 'd_weights.h5'), True)
