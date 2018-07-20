@@ -102,7 +102,7 @@ class anoGAN(object):
         '''
         :return: generator model
         '''
-        resize_size = self.data_size // (2 ** self.n_convs)
+        resize_size = self.data_size // np.sqrt(self.max_filters * 2)
         filter_sets = self.max_filters // 2 ** np.arange(self.n_convs)[::-1]
 
         input_gen = Input(shape=(self.latent_size,))
@@ -110,12 +110,12 @@ class anoGAN(object):
         x_gen = Dense(1024)(input_gen)
         x_gen = Activation('relu')(x_gen)
 
-        x_gen = Dense(64 * filter_sets[0])(x_gen)
+        x_gen = Dense(64 * self.max_filters * 2)(x_gen)
         x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('relu')(x_gen)
-        x_gen = Reshape((resize_size, resize_size, filter_sets[0]))(x_gen)
+        x_gen = Reshape((resize_size, resize_size, self.max_filters * 2))(x_gen)
 
-        for n in filter_sets[1:]:
+        for n in filter_sets:
             x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
             x_gen = BatchNormalization()(x_gen)
