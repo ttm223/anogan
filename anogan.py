@@ -210,16 +210,17 @@ class anoGAN(object):
         self._save_yaml()
         size = (self.data_size, self.data_size)
 
-        d = self.Discriminator_model()
         g = self.Generator_model()
-        gan = self.GAN_model(generator=g, discriminator=d)
-        g.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
         g.summary()
-        gan.compile(loss='binary_crossentropy', optimizer=self.g_optim(lr=self.g_lr))
-        gan.summary()
-        d.trainable = True
+
+        d = self.Discriminator_model()
         d.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
         d.summary()
+
+        gan = self.GAN_model(generator=g, discriminator=d)
+        gan.compile(loss='binary_crossentropy', optimizer=self.g_optim(lr=self.g_lr))
+        gan.summary()
+        self._set_trainable(d, trainable=True)
 
         generator = ImageDataGeneratorFCN(rotation_range=0.,
                                           width_shift_range=0.,
@@ -273,10 +274,9 @@ class anoGAN(object):
             progress_bar = Progbar(target=n_iter)
 
             for idx in range(n_iter):
-                noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
-
                 real_img, _ = g_flow.next()
-
+                
+                noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
                 fake_img = g.predict(noise, verbose=0)
 
                 X = np.concatenate([real_img, fake_img], axis=0)
@@ -284,9 +284,7 @@ class anoGAN(object):
 
                 d_loss = d.train_on_batch(X, y)
 
-                self._set_trainable(d, trainable=False)
                 g_loss = gan.train_on_batch(noise, np.array([1] * self.batch_size))
-                self._set_trainable(d, trainable=True)
 
                 progress_bar.update(idx, values=[('g', g_loss), ('d', d_loss)])
             print('')
