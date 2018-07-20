@@ -666,7 +666,7 @@ class DirectoryIteratorFCN(Iterator):
         self.name_tgt = []
         if hasattr(path_img, '__iter__') and (not isinstance(path_img, str)):
             self.name_img += [os.path.basename(r) for r in self.path_img]
-            if not self.autoencoder_mode:
+            if not (self.autoencoder_mode and self.cnn_mode):
                 self.name_tgt += [os.path.basename(r) for r in self.path_tgt]
         else:
             tmp_img = []
