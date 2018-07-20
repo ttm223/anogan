@@ -110,18 +110,18 @@ class anoGAN(object):
         x_gen = Dense(1024)(input_gen)
         x_gen = Activation('relu')(x_gen)
 
-        x_gen = Dense(64 * self.max_filters * 2)(x_gen)
+        x_gen = Dense(resize_size * resize_size * self.max_filters * 2)(x_gen)
         x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('relu')(x_gen)
         x_gen = Reshape((resize_size, resize_size, self.max_filters * 2))(x_gen)
+        x_gen = Conv2DTranspose(self.max_filters * 2, (2, 2), strides=(2, 2), padding='same')(x_gen)
 
         for n in filter_sets:
-            x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
             x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
+            x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
 
-        x_gen = UpSampling2D((2, 2))(x_gen)
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('tanh')(x_gen)
