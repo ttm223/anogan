@@ -274,7 +274,6 @@ class anoGAN(object):
             progress_bar = Progbar(target=n_iter)
 
             for idx in range(n_iter):
-                print('iter {}/{}'.format(idx + 1, n_iter))
                 noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
 
                 real_img, _ = g_flow.next()
