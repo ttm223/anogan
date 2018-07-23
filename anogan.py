@@ -238,24 +238,24 @@ class anoGAN(object):
         gan.summary()
         self._set_trainable(d, trainable=True)
 
-        generator = ImageDataGeneratorFCN(rotation_range=0.,
-                                          width_shift_range=0.,
-                                          height_shift_range=0.,
-                                          shear_range=0.,
-                                          zoom_range=0.,
-                                          fill_mode='nearest',
-                                          cval=0.,
-                                          horizontal_flip=False,
-                                          vertical_flip=False,
-                                          gamma_shift_base=0,
-                                          hue_shift_range=0,
-                                          lightness_shift_range=0,
-                                          saturation_shift_range=0,
-                                          autoencoder_mode=False,
-                                          cnn_mode=True,
-                                          minmax_standerdize=True,
-                                          minmax_from=(0, 255),
-                                          minmax_to=(-1, 1))
+        # generator = ImageDataGeneratorFCN(rotation_range=0.,
+        #                                   width_shift_range=0.,
+        #                                   height_shift_range=0.,
+        #                                   shear_range=0.,
+        #                                   zoom_range=0.,
+        #                                   fill_mode='nearest',
+        #                                   cval=0.,
+        #                                   horizontal_flip=False,
+        #                                   vertical_flip=False,
+        #                                   gamma_shift_base=0,
+        #                                   hue_shift_range=0,
+        #                                   lightness_shift_range=0,
+        #                                   saturation_shift_range=0,
+        #                                   autoencoder_mode=False,
+        #                                   cnn_mode=True,
+        #                                   minmax_standerdize=True,
+        #                                   minmax_from=(0, 255),
+        #                                   minmax_to=(-1, 1))
 
         # if self.flow_from_dir:
         #     real_path = []
