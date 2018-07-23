@@ -197,9 +197,9 @@ class anoGAN(object):
 
         return model
 
-    def Detector_mode(self, generator, discriminator):
+    def Detector_model(self, generator, discriminator):
         input_latent = Input(shape=(self.latent_size,))
-        x_latent = Conv1D(1, self.latent_size)(input_latent)
+        x_latent = Dense(self.latent_size)(input_latent)
         x_latent = Activation('sigmoid')(x_latent)
 
         generator = Model(inputs=generator.layers[1].input, outputs=generator.layers[-1].output)
@@ -353,7 +353,7 @@ class anoGAN(object):
         feature.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
         feature.summary()
 
-        detector = self.Detector_mode(g, d)
+        detector = self.Detector_model(g, d)
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
                          optimizer=self.d_optim(lr=self.d_lr))
         detector.summary()
