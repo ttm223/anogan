@@ -185,8 +185,8 @@ class anoGAN(object):
         '''
         :return: gan model
         '''
-        self._set_trainable(discriminator, trainable=False)
-        # discriminator.trainable = False
+        # self._set_trainable(discriminator, trainable=False)
+        discriminator.trainable = False
         input_gan = Input(shape=(self.latent_size,))
         x_gan = generator(input_gan)
         output_gan = discriminator(x_gan)
