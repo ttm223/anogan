@@ -138,8 +138,8 @@ class anoGAN(object):
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
             x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
-            # x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
-            x_gen = UpSampling2D((2, 2))(x_gen)
+            x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
+            # x_gen = UpSampling2D((2, 2))(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         x_gen = BatchNormalization()(x_gen)
@@ -156,20 +156,16 @@ class anoGAN(object):
         :return: discriminator model
         '''
         filter_sets = self.g_final_filters * 2 ** np.arange(self.n_convs)
-        resize_size = self.data_size // (2 ** self.n_convs)
 
         input_dis = Input(shape=(self.data_size, self.data_size, self.data_ch))
         x_dis = input_dis
 
         for n in filter_sets:
             x_dis = Conv2D(n, (5, 5), strides=(2, 2), padding='same')(x_dis)
-            # x_dis = BatchNormalization()(x_dis)
+            x_dis = BatchNormalization()(x_dis)
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
         x_dis = Flatten()(x_dis)
-        x_dis = Dense(resize_size * resize_size * filter_sets[-1])(x_dis)
-        x_dis = LeakyReLU(alpha=0.2)(x_dis)
-        x_dis = Dropout(0.5)(x_dis)
 
         x_dis = Dense(1024)(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
