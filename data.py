@@ -136,7 +136,7 @@ def load_data(src, ext='png',
                 img = cv2.resize(img, size)
             images.append(img)
         images = np.array(images, dtype=dtype)
-
+    print(images.shape)
     if color_mode == cv2.IMREAD_COLOR:
         images = images[:, :, :, ::-1]
     else:
