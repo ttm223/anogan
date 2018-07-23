@@ -185,8 +185,8 @@ class anoGAN(object):
         '''
         :return: gan model
         '''
-        # self._set_trainable(discriminator, trainable=False)
-        discriminator.trainable = False
+        self._set_trainable(discriminator, trainable=False)
+        # discriminator.trainable = False
         input_gan = Input(shape=(self.latent_size,))
         x_gan = generator(input_gan)
         output_gan = discriminator(x_gan)
@@ -279,7 +279,7 @@ class anoGAN(object):
             n_iter = len(images) // self.batch_size
             g_flow = generator.flow_fcn(images, None, batch_size=self.batch_size,  class_mode='categorical',
                                         class_palette=None, shuffle=True, seed=None,
-                                        save_to_dir=None, save_prefix='', save_format='png')
+                                        save_to_dir='./mnist_test/gen_img', save_prefix='', save_format='png')
             print('input data: {}'.format(len(images)))
 
         for ep in range(self.epoch):
@@ -295,9 +295,9 @@ class anoGAN(object):
 
                 X = np.concatenate([real_img, fake_img], axis=0)
                 y = np.array([1.] * len(real_img) + [0.] * len(fake_img))
-                d.trainable = True
+                # d.trainable = True
                 d_loss = d.train_on_batch(X, y)
-                d.trainable = False
+                # d.trainable = False
                 g_loss = gan.train_on_batch(noise, np.array([1] * self.batch_size))
 
                 progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
