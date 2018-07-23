@@ -3,6 +3,7 @@ import anogan
 
 
 def main():
+    # now testing condition
     yaml_path = './params.yaml'
     # yaml_path = input('input yaml file path: ')
     print('get path: {}'.format(yaml_path))
