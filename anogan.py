@@ -130,18 +130,18 @@ class anoGAN(object):
         x_gen = Activation('relu')(x_gen)
 
         x_gen = Dense(resize_size * resize_size * filter_sets[0])(x_gen)
-        # x_gen = BatchNormalization()(x_gen)
+        x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('relu')(x_gen)
         x_gen = Reshape((resize_size, resize_size, filter_sets[0]))(x_gen)
 
         for n in filter_sets:
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
-            # x_gen = BatchNormalization()(x_gen)
+            x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
             x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
-        # x_gen = BatchNormalization()(x_gen)
+        x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('tanh')(x_gen)
 
         output_gen = x_gen
@@ -186,7 +186,7 @@ class anoGAN(object):
         :return: gan model
         '''
         self._set_trainable(discriminator, trainable=False)
-        # discriminator.trainable = False
+        discriminator.trainable = False
         input_gan = Input(shape=(self.latent_size,))
         x_gan = generator(input_gan)
         output_gan = discriminator(x_gan)
@@ -329,7 +329,7 @@ class anoGAN(object):
                 # d.trainable = True
                 d_loss = d.train_on_batch(X, y)
                 # d.trainable = False
-                g_loss = gan.train_on_batch(noise, np.array([1] * self.batch_size))
+                g_loss = gan.train_on_batch(noise, np.array([1.] * self.batch_size))
 
                 progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
                 if idx == n_iter - 1:
