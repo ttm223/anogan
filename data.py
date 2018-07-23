@@ -118,8 +118,8 @@ def load_data(src, ext='png',
                 lbl = cv2.resize(lbl, size)
             images.append(img)
             labels.append(lbl)
-        images = np.array(images, dtype=dtype) / 255.
-        labels = np.array(labels, dtype=dtype) / 255.
+        images = np.array(images, dtype=dtype)
+        labels = np.array(labels, dtype=dtype)
 
     else:
         for ip in img_path:
@@ -135,7 +135,7 @@ def load_data(src, ext='png',
                     and img.shape[1] != size[1]):
                 img = cv2.resize(img, size)
             images.append(img)
-        images = np.array(images, dtype=dtype) / 255.
+        images = np.array(images, dtype=dtype)
 
     if color_mode == cv2.IMREAD_COLOR:
         images = images[:, :, :, ::-1]
