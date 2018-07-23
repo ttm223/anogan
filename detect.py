@@ -28,7 +28,7 @@ def _mnist_data_load():
 def main():
     images, labels = _mnist_data_load()
     ano = anogan.anoGAN()
-    with open('./mnist_test/detect/score.csv', 'w') as f:
+    with open('./mnist_test/detect/score.csv', 'a', newline='') as f:
         writer = csv.writer(f, lineterminator='\n')
         for i, (img, lbl) in enumerate(zip(images, labels)):
             img = img[np.newaxis, :, :, :]
