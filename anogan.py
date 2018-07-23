@@ -139,7 +139,6 @@ class anoGAN(object):
             x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
             x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
-            # x_gen = UpSampling2D((2, 2))(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         x_gen = BatchNormalization()(x_gen)
@@ -172,7 +171,7 @@ class anoGAN(object):
         x_dis = Dropout(0.5)(x_dis)
 
         x_dis = Dense(1)(x_dis)
-        output_dis = Activation('softmax')(x_dis)
+        output_dis = Activation('sigmoid')(x_dis)
 
         model = Model(inputs=[input_dis], outputs=[output_dis])
 
@@ -299,37 +298,6 @@ class anoGAN(object):
             data_len = len(images)
             n_iter = data_len // self.batch_size
             print('input data: {}'.format(data_len))
-
-        print('pretraining')
-        for ep in range(30):
-            print('Epoch: {}/{}'.format(ep + 1, 30))
-
-            progress_bar = Progbar(target=n_iter)
-            random_idx = np.random.permutation(data_len)
-
-            for idx in range(n_iter):
-                # real_img, _ = g_flow.next()
-                pick_idx = random_idx[(self.batch_size * idx):(self.batch_size * (idx + 1))]
-                if self.flow_from_dir:
-                    real_img, _, _ = load_data(real_path[pick_idx], ext=None,
-                                               color_mode=0, dtype=np.float32,
-                                               size=size, resize_type='ec',
-                                               load_lbl=False, lbl_dir='lbl', lbl_suf='_lbl', )
-                    real_img = 2. * real_img / 255. - 1.
-                else:
-                    real_img = images[pick_idx]
-
-                noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
-                fake_img = g.predict(noise, verbose=0)
-
-                X = np.concatenate([real_img, fake_img], axis=0)
-                y = np.array([1.] * len(real_img) + [0.] * len(fake_img))
-                # d.trainable = True
-                d_loss = d.train_on_batch(X, y)
-                # d.trainable = False
-
-                progress_bar.update(idx, values=[('d-loss', d_loss)])
-            print('')
 
         for ep in range(self.epoch):
             print('Epoch: {}/{}'.format(ep + 1, self.epoch))
