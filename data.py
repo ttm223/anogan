@@ -83,10 +83,10 @@ def load_data(src, ext='png',
         img_path = src
 
     # set rgb or grayscale
-    if (color_mode == 'COLOR' or color_mode == 'color'
+    if (color_mode == 'RGB' or color_mode == 'rgb'
         or color_mode == cv2.IMREAD_COLOR):
         color_mode = cv2.IMREAD_COLOR
-    elif (color_mode == 'GRAY' or color_mode == 'gray'
+    elif (color_mode == 'GRAYSCALE' or color_mode == 'grayscale'
           or color_mode == cv2.IMREAD_GRAYSCALE):
         color_mode = cv2.IMREAD_GRAYSCALE
     else:
