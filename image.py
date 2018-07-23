@@ -12,7 +12,6 @@ import warnings
 
 # Additional
 from skimage.exposure import adjust_gamma
-from skimage import io
 import cv2
 from glob import glob
 
@@ -50,11 +49,13 @@ def random_hls_shift(x, hls_range):
 
 
 def load_to_array(path, grayscale=False, target_size=None):
-    array = io.imread(path)
+    color_mode = not grayscale
+    if color_mode:
+        array = cv2.imread(path, color_mode)[:, :, ::-1]
+    else:
+        array = cv2.imread(path, color_mode)[:, :, np.newaxis]
     if target_size is not None:
         array = cv2.resize(array, target_size)
-    if grayscale:
-        array = cv2.cvtColor(array, cv2.COLOR_RGB2GRAY)[:, :, np.newaxis]
     return array
 
 
