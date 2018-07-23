@@ -130,18 +130,18 @@ class anoGAN(object):
         x_gen = Activation('relu')(x_gen)
 
         x_gen = Dense(resize_size * resize_size * filter_sets[0])(x_gen)
-        x_gen = BatchNormalization()(x_gen)
+        # x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('relu')(x_gen)
         x_gen = Reshape((resize_size, resize_size, filter_sets[0]))(x_gen)
 
         for n in filter_sets:
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
-            x_gen = BatchNormalization()(x_gen)
+            # x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
             x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
-        x_gen = BatchNormalization()(x_gen)
+        # x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('tanh')(x_gen)
 
         output_gen = x_gen
@@ -162,7 +162,7 @@ class anoGAN(object):
 
         for n in filter_sets:
             x_dis = Conv2D(n, (5, 5), strides=(2, 2), padding='same')(x_dis)
-            x_dis = BatchNormalization()(x_dis)
+            # x_dis = BatchNormalization()(x_dis)
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
         x_dis = Flatten()(x_dis)
@@ -334,7 +334,7 @@ class anoGAN(object):
                 progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
                 if idx == n_iter - 1:
                     np.save(join(self.save_dir, 'e{}.npy'.format(ep)), X)
-                    
+
             print('')
             # save weights per epoch for test
             g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep)), True)
