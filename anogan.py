@@ -225,6 +225,7 @@ class anoGAN(object):
         size = (self.data_size, self.data_size)
 
         g = self.Generator_model()
+        g.compile(loss='binary_crossentropy', optimizer=self.g_optim(lr=self.g_lr))
         g.summary()
 
         d = self.Discriminator_model()
