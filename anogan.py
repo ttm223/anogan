@@ -333,10 +333,10 @@ class anoGAN(object):
 
             print('')
             # save weights per epoch for test
-            if ep % 20 == 19:
+            if ep % 20 == 1:
                 g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep)), True)
                 d.save_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(ep)), True)
-                img_save_dir = join(self.save_dir, '/gen_img', str(ep))
+                img_save_dir = join(self.save_dir, 'gen_img', str(ep))
                 if not exists(img_save_dir):
                     os.makedirs(img_save_dir)
                     os.chmod(img_save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
