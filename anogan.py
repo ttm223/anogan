@@ -312,7 +312,7 @@ class anoGAN(object):
                 # real_img, _ = g_flow.next()
                 pick_idx = random_idx[(self.batch_size * idx):(self.batch_size * (idx + 1))]
                 if self.flow_from_dir:
-                    real_img, _, _ = load_data(real_path[pick_idx], ext=ext,
+                    real_img, _, _ = load_data(real_path[pick_idx], ext=None,
                                                color_mode=0, dtype=np.float32,
                                                size=size, resize_type='ec',
                                                load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl', )
