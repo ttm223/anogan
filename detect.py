@@ -28,9 +28,10 @@ def main():
     images, labels = _mnist_data_load()
     ano = anogan.anoGAN()
     for i, (img, lbl) in enumerate(zip(images, labels)):
+        img = img[np.newaxis, :, :, :]
         loss, detections = ano.detect(img, './params.yaml')
-        detections = ((detections + 1.) * 255. / 2.).astype(np.uint8)
-        img = ((img + 1.) * 255. / 2.).astype(np.uint8)
+        detections = ((detections[:, :, 0] + 1.) * 255. / 2.).astype(np.uint8)
+        img = ((img[0, :, :, 0] + 1.) * 255. / 2.).astype(np.uint8)
         img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
         dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_d.png'
         cv2.imwrite(join('./mnist_test/detect/', img_name), img)
