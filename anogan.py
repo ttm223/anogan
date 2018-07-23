@@ -168,11 +168,11 @@ class anoGAN(object):
         x_dis = Flatten()(x_dis)
         x_dis = Dense(resize_size * resize_size * filter_sets[-1])(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
-        x_dis = Dropout(0.5)(x_dis)
+        # x_dis = Dropout(0.5)(x_dis)
 
         x_dis = Dense(1024)(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
-        x_dis = Dropout(0.5)(x_dis)
+        # x_dis = Dropout(0.5)(x_dis)
 
         x_dis = Dense(1)(x_dis)
         output_dis = Activation('softmax')(x_dis)
