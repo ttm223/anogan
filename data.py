@@ -46,7 +46,7 @@ def load_data(src, ext='png',
     else:
         ValueError('`ext` expects str or list.')
     src.sort()
-
+    print(src)
     if load_lbl and lbl_dir:
         img_path = []
         lbl_path = []
