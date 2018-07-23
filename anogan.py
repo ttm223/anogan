@@ -34,7 +34,8 @@ def residual_loss(y_true, y_pred):
 class anoGAN(object):
 
     param_names = ['batch_size', 'd_lr', 'd_optim',
-                   'data_ch', 'data_size', 'epoch', 'g_lr',
+                   'data_ch', 'data_size', 'epoch',
+                   'g_final_filter', 'g_lr',
                    'g_optim', 'image_dir', 'latent_size',
                    'loss_lambda', 'max_filters', 'n_convs',
                    'save_dir']
@@ -48,12 +49,12 @@ class anoGAN(object):
         self.data_size = 64
         self.epoch = 20
         self.flow_from_dir = True
+        self.g_final_filters = 64
         self.g_lr = 1e-4
         self.g_optim = Adam
         self.image_dir = None
         self.latent_size = 100
         self.loss_lambda = 0.1
-        self.max_filters = 512
         self.n_convs = 4
         self.save_dir = './'
 
@@ -78,6 +79,10 @@ class anoGAN(object):
         for key, value in params_dict.items():
             if key in self.param_names:
                 setattr(self, key, value)
+        # check validity between 'data_size' and 'n_convs'
+        for i in range(self.n_convs -1, -1, -1):
+            i = 2 ** i
+
         self.d_optim = self._fetch_optim(self.d_optim)
         self.g_optim = self._fetch_optim(self.g_optim)
 
@@ -102,19 +107,18 @@ class anoGAN(object):
         '''
         :return: generator model
         '''
-        resize_size = self.data_size // np.sqrt(self.max_filters * 2).astype(np.int)
-        filter_sets = self.max_filters // 2 ** np.arange(self.n_convs)
+        filter_sets = self.g_final_filters * 2 ** np.arange(self.n_convs)[::-1]
+        resize_size = self.data_size // (2 ** (self.n_convs - 1))
 
         input_gen = Input(shape=(self.latent_size,))
 
         x_gen = Dense(1024)(input_gen)
         x_gen = Activation('relu')(x_gen)
 
-        x_gen = Dense(resize_size * resize_size * self.max_filters * 2)(x_gen)
+        x_gen = Dense(resize_size * resize_size * filter_sets[0])(x_gen)
         x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('relu')(x_gen)
-        x_gen = Reshape((resize_size, resize_size, self.max_filters * 2))(x_gen)
-        x_gen = Conv2DTranspose(self.max_filters * 2, (2, 2), strides=(2, 2), padding='same')(x_gen)
+        x_gen = Reshape((resize_size, resize_size, filter_sets[0]))(x_gen)
 
         for n in filter_sets:
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
@@ -136,8 +140,8 @@ class anoGAN(object):
         '''
         :return: discriminator model
         '''
-        size_predense = self.data_size // np.sqrt(self.max_filters * 2).astype(np.int)
-        filter_sets = 2 * self.max_filters // 2 ** np.arange(self.n_convs + 1)[::-1]
+        filter_sets = self.g_final_filters * 2 ** np.arange(self.n_convs)
+        resize_size = self.data_size // (2 ** (self.n_convs - 1))
 
         input_dis = Input(shape=(self.data_size, self.data_size, self.data_ch))
         x_dis = input_dis
@@ -148,7 +152,7 @@ class anoGAN(object):
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
         x_dis = Flatten()(x_dis)
-        x_dis = Dense(size_predense * size_predense * filter_sets[-1])(x_dis)
+        x_dis = Dense(resize_size * resize_size * filter_sets[-1])(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
         x_dis = Dropout(0.5)(x_dis)
 
@@ -188,7 +192,7 @@ class anoGAN(object):
         x_latent = Activation('sigmoid')(x_latent)
 
         generator = Model(inputs=generator.layers[1].input, outputs=generator.layers[-1].output)
-        generator.trainable = False
+        self._set_trainable(generator, trainable=False)
 
         feature = self.Feature_model(discriminator)
 
