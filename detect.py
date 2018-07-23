@@ -33,8 +33,9 @@ def main():
         img = ((img + 1.) * 255. / 2.).astype(np.uint8)
         img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
         dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_d.png'
-        cv2.imwrite('./mnist_test/detect/img_name', img)
-        cv2.imwrite('./mnist_test/detect/dt_name', detections)
+        cv2.imwrite(join('./mnist_test/detect/', img_name), img)
+        cv2.imwrite(join('./mnist_test/detect/', dt_name), detections)
+
 
 if __name__ == '__main__':
     main()
