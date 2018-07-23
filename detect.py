@@ -27,16 +27,18 @@ def _mnist_data_load():
 def main():
     images, labels = _mnist_data_load()
     ano = anogan.anoGAN()
-    for i, (img, lbl) in enumerate(zip(images, labels)):
-        img = img[np.newaxis, :, :, :]
-        loss, detections = ano.detect(img, './params.yaml')
-        detections = ((detections[0, :, :, 0] + 1.) * 255. / 2.).astype(np.uint8)
-        img = (img[0, :, :, 0] * 255.).astype(np.uint8)
-        img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
-        dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_d.png'
-        cv2.imwrite(join('./mnist_test/detect/', img_name), img)
-        cv2.imwrite(join('./mnist_test/detect/', dt_name), detections)
-
+    with open('./mnist_test/detect/score.csv', 'w') as f:
+        writer = csv.writer(f, lineterminator='\n')
+        for i, (img, lbl) in enumerate(zip(images, labels)):
+            img = img[np.newaxis, :, :, :]
+            loss, detections = ano.detect(img, './params.yaml')
+            detections = ((detections[0, :, :, 0] + 1.) * 255. / 2.).astype(np.uint8)
+            img = (img[0, :, :, 0] * 255.).astype(np.uint8)
+            img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
+            dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_d.png'
+            cv2.imwrite(join('./mnist_test/detect/', img_name), img)
+            cv2.imwrite(join('./mnist_test/detect/', dt_name), detections)
+            writer.writerow([img_name, loss])
 
 if __name__ == '__main__':
     main()
