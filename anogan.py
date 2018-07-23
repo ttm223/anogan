@@ -296,7 +296,7 @@ class anoGAN(object):
             images, _, _ = load_data(self.image_dir, ext=ext,
                                      color_mode=0, dtype=np.float32,
                                      size=size, resize_type='ec',
-                                     load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl',)
+                                     load_lbl=False, lbl_dir='lbl', lbl_suf='_lbl',)
             images = 2. * images / 255. - 1.
             data_len = len(images)
             n_iter = data_len // self.batch_size
@@ -315,7 +315,7 @@ class anoGAN(object):
                     real_img, _, _ = load_data(real_path[pick_idx], ext=None,
                                                color_mode=0, dtype=np.float32,
                                                size=size, resize_type='ec',
-                                               load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl', )
+                                               load_lbl=False, lbl_dir='lbl', lbl_suf='_lbl', )
                     real_img = 2. * real_img / 255. - 1.
                 else:
                     real_img = images[pick_idx]
