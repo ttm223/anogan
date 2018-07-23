@@ -43,6 +43,8 @@ def load_data(src, ext='png',
         src = tmp
     elif (not ext) and isinstance(src, str):
         src = [src]
+    elif not ext:
+        pass
     else:
         ValueError('`ext` expects str or list.')
     src.sort()
@@ -136,7 +138,7 @@ def load_data(src, ext='png',
                 img = cv2.resize(img, size)
             images.append(img)
         images = np.array(images, dtype=dtype)
-    print(images.shape)
+
     if color_mode == cv2.IMREAD_COLOR:
         images = images[:, :, :, ::-1]
     else:
