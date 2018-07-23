@@ -350,7 +350,6 @@ class anoGAN(object):
         z = np.random.uniform(0, 1, size=(1, self.latent_size))
 
         feature = self.Feature_model(d)
-        feature.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
         feature.summary()
 
         detector = self.Detector_model(g, d)
