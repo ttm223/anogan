@@ -304,6 +304,37 @@ class anoGAN(object):
             n_iter = data_len // self.batch_size
             print('input data: {}'.format(data_len))
 
+        print('pretraining')
+        for ep in range(30):
+            print('Epoch: {}/{}'.format(ep + 1, self.epoch))
+
+            progress_bar = Progbar(target=n_iter)
+            random_idx = np.random.permutation(data_len)
+
+            for idx in range(n_iter):
+                # real_img, _ = g_flow.next()
+                pick_idx = random_idx[(self.batch_size * idx):(self.batch_size * (idx + 1))]
+                if self.flow_from_dir:
+                    real_img, _, _ = load_data(real_path[pick_idx], ext=None,
+                                               color_mode=0, dtype=np.float32,
+                                               size=size, resize_type='ec',
+                                               load_lbl=False, lbl_dir='lbl', lbl_suf='_lbl', )
+                    real_img = 2. * real_img / 255. - 1.
+                else:
+                    real_img = images[pick_idx]
+
+                noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
+                fake_img = g.predict(noise, verbose=0)
+
+                X = np.concatenate([real_img, fake_img], axis=0)
+                y = np.array([1.] * len(real_img) + [0.] * len(fake_img))
+                # d.trainable = True
+                d_loss = d.train_on_batch(X, y)
+                # d.trainable = False
+
+                progress_bar.update(idx, values=[('d-loss', d_loss)])
+            print('')
+
         for ep in range(self.epoch):
             print('Epoch: {}/{}'.format(ep + 1, self.epoch))
 
