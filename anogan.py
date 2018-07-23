@@ -265,7 +265,7 @@ class anoGAN(object):
                     target_size=size, color_mode=self.color_mode,
                     class_mode='categorical', class_palette=None,
                     batch_size=self.batch_size, shuffle=True, seed=None,
-                    save_to_dir=None,
+                    save_to_dir='./mnist_test/gen_img',
                     save_prefix='',
                     save_format='png',
                     follow_links=False)
