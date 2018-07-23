@@ -12,7 +12,7 @@ def _mnist_data_load():
     path = '/work/tsutsumi/open_datasets/mnist'
     lst = []
     labels = []
-    for i in range(1, 10, 1):
+    for i in range(10):
         lst += glob(join(path, str(i), '*.png'))[:5]
         labels += [i] * 5
     labels = np.array(labels)
