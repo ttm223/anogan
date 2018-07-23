@@ -275,7 +275,7 @@ class anoGAN(object):
 
             for idx in range(n_iter):
                 real_img, _ = g_flow.next()
-                
+
                 noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
                 fake_img = g.predict(noise, verbose=0)
 
@@ -286,11 +286,11 @@ class anoGAN(object):
 
                 g_loss = gan.train_on_batch(noise, np.array([1] * self.batch_size))
 
-                progress_bar.update(idx, values=[('g', g_loss), ('d', d_loss)])
+                progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
             print('')
-
-            g.save_weights(join(self.save_dir, 'g_weights.h5'), True)
-            d.save_weights(join(self.save_dir, 'd_weights.h5'), True)
+            # save weights per epoch for test
+            g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep)), True)
+            d.save_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(ep)), True)
 
         return d, g
 
@@ -301,7 +301,7 @@ class anoGAN(object):
         feature.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
         feature.summary()
 
-        detector =  self.Detector_mode(generator, discriminator)
+        detector = self.Detector_mode(generator, discriminator)
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
                          optimizer=self.d_optim(lr=self.d_lr))
         detector.summary()
