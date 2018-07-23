@@ -332,6 +332,11 @@ class anoGAN(object):
                 g_loss = gan.train_on_batch(noise, np.array([1] * self.batch_size))
 
                 progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
+                if idx == n_iter - 1:
+                    np.save(join(self.save_dir, 'real_e{}.npy'.format(ep)),
+                            real_img)
+                    np.save(join(self.save_dir, 'fake_e{}.npy'.format(ep)),
+                            fake_img)
             print('')
             # save weights per epoch for test
             g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep)), True)
