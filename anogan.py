@@ -255,40 +255,70 @@ class anoGAN(object):
                                           minmax_from=(0, 255),
                                           minmax_to=(-1, 1))
 
+        # if self.flow_from_dir:
+        #     real_path = []
+        #     for ext in self.white_list:
+        #         real_path += glob(join(self.image_dir, '*.' + ext))
+        #     n_iter = len(real_path) // self.batch_size
+        #     g_flow = generator.flow_from_directory_fcn(
+        #             real_path, None,
+        #             target_size=size, color_mode=self.color_mode,
+        #             class_mode='categorical', class_palette=None,
+        #             batch_size=self.batch_size, shuffle=True, seed=None,
+        #             save_to_dir='./mnist_test/gen_img',
+        #             save_prefix='',
+        #             save_format='png',
+        #             follow_links=False)
+        #     print('input data: {}'.format(len(real_path)))
+        # else:
+        #     ext = ['png', 'jpg', 'jpeg', 'bmp']
+        #     images, _, _ = load_data(self.image_dir, ext=ext,
+        #                              color_mode=self.color_mode, dtype=np.float32,
+        #                              size=size, resize_type='ec',
+        #                              load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl',)
+        #     n_iter = len(images) // self.batch_size
+        #     g_flow = generator.flow_fcn(images, None, batch_size=self.batch_size,  class_mode='categorical',
+        #                                 class_palette=None, shuffle=True, seed=None,
+        #                                 save_to_dir='./mnist_test/gen_img', save_prefix='', save_format='png')
+        #     print('input data: {}'.format(len(images)))
+
+        ext = ['png', 'jpg', 'jpeg', 'bmp']
         if self.flow_from_dir:
             real_path = []
             for ext in self.white_list:
                 real_path += glob(join(self.image_dir, '*.' + ext))
-            n_iter = len(real_path) // self.batch_size
-            g_flow = generator.flow_from_directory_fcn(
-                    real_path, None,
-                    target_size=size, color_mode=self.color_mode,
-                    class_mode='categorical', class_palette=None,
-                    batch_size=self.batch_size, shuffle=True, seed=None,
-                    save_to_dir='./mnist_test/gen_img',
-                    save_prefix='',
-                    save_format='png',
-                    follow_links=False)
-            print('input data: {}'.format(len(real_path)))
+            data_len = len(real_path)
+            n_iter = data_len // self.batch_size
+            real_path = np.array(real_path)
+            print('input data: {}'.format(data_len))
+
         else:
-            ext = ['png', 'jpg', 'jpeg', 'bmp']
             images, _, _ = load_data(self.image_dir, ext=ext,
                                      color_mode=self.color_mode, dtype=np.float32,
                                      size=size, resize_type='ec',
                                      load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl',)
-            n_iter = len(images) // self.batch_size
-            g_flow = generator.flow_fcn(images, None, batch_size=self.batch_size,  class_mode='categorical',
-                                        class_palette=None, shuffle=True, seed=None,
-                                        save_to_dir='./mnist_test/gen_img', save_prefix='', save_format='png')
-            print('input data: {}'.format(len(images)))
+            images = 2. * images / 255. - 1.
+            data_len = len(images)
+            n_iter = data_len // self.batch_size
+            print('input data: {}'.format(data_len))
 
         for ep in range(self.epoch):
             print('Epoch: {}/{}'.format(ep + 1, self.epoch))
 
             progress_bar = Progbar(target=n_iter)
+            random_idx = np.random.permutation(data_len)
 
             for idx in range(n_iter):
-                real_img, _ = g_flow.next()
+                # real_img, _ = g_flow.next()
+                pick_idx = random_idx[(self.batch_size * idx):(self.batch_size * (idx + 1))]
+                if self.flow_from_dir:
+                    real_img, _, _ = load_data(real_path[pick_idx], ext=ext,
+                                               color_mode=self.color_mode, dtype=np.float32,
+                                               size=size, resize_type='ec',
+                                               load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl', )
+                    real_img = 2. * real_img / 255. - 1.
+                else:
+                    real_img = images[pick_idx]
 
                 noise = np.random.uniform(0, 1, size=(self.batch_size, self.latent_size))
                 fake_img = g.predict(noise, verbose=0)
