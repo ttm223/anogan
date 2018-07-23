@@ -3,6 +3,7 @@
 import numpy as np
 import os
 import yaml
+import shutil
 
 from glob import glob
 from os.path import exists, join
@@ -80,19 +81,22 @@ class anoGAN(object):
             if key in self.param_names:
                 setattr(self, key, value)
         # check validity between 'data_size' and 'n_convs'
-        for i in range(self.n_convs -1, -1, -1):
-            i = 2 ** i
-
+        tmp_convs = 0
+        for i in range(self.n_convs, 0, -1):
+            k = 2 ** i
+            if self.data_size % k != 0:
+                self.n_convs = tmp_convs
+                print('Warning: `n_convs` is invalid.'
+                      '`n_convs` sets {}.'.format(tmp_convs))
+                break
+            tmp_convs = i
         self.d_optim = self._fetch_optim(self.d_optim)
         self.g_optim = self._fetch_optim(self.g_optim)
 
-    def _save_yaml(self):
-        yaml_path = join(self.save_dir, 'params.yaml')
-        params_dict = {}
-        for param in self.param_names:
-            params_dict.update({param: getattr(self, param)})
-        with open(yaml_path, mode='w') as f:
-            f.write(yaml.dump(params_dict))
+        if not exists(self.save_dir):
+            os.makedirs(self.save_dir)
+            os.chmod(self.save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
+        shutil.copyfile(yaml_path, join(self.save_dir, 'params.yaml'))
 
     def _set_trainable(self, model, trainable=False):
         model.trainable = trainable
@@ -207,11 +211,6 @@ class anoGAN(object):
 
         self._set_params(yaml_path)
 
-        if not exists(self.save_dir):
-            os.makedirs(self.save_dir)
-            os.chmod(self.save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
-
-        self._save_yaml()
         size = (self.data_size, self.data_size)
 
         g = self.Generator_model()
