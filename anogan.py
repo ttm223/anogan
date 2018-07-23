@@ -44,6 +44,7 @@ class anoGAN(object):
 
     def __init__(self):
         self.batch_size = 16
+        self.color_mode = 'rgb'
         self.d_lr = 1e-4
         self.d_optim = Adam
         self.data_ch = 3
@@ -86,12 +87,21 @@ class anoGAN(object):
             k = 2 ** i
             if self.data_size % k != 0:
                 self.n_convs = tmp_convs
-                print('Warning: `n_convs` is invalid.'
+                print('Warning: `n_convs` is invalid. '
                       '`n_convs` sets {}.'.format(tmp_convs))
                 break
             tmp_convs = i
         self.d_optim = self._fetch_optim(self.d_optim)
         self.g_optim = self._fetch_optim(self.g_optim)
+
+        if self.data_ch == 3:
+            self.color_mode = 'rgb'
+        elif self.data_ch == 1:
+            self.color_mode = 'grayscale'
+        else:
+            self.color_mode = 'rgb'
+            print('Warning: `data_ch` is invalid. '
+                  '`data_ch` sets rgb mode.')
 
         if not exists(self.save_dir):
             os.makedirs(self.save_dir)
@@ -112,7 +122,7 @@ class anoGAN(object):
         :return: generator model
         '''
         filter_sets = self.g_final_filters * 2 ** np.arange(self.n_convs)[::-1]
-        resize_size = self.data_size // (2 ** (self.n_convs - 1))
+        resize_size = self.data_size // (2 ** self.n_convs)
 
         input_gen = Input(shape=(self.latent_size,))
 
@@ -145,7 +155,7 @@ class anoGAN(object):
         :return: discriminator model
         '''
         filter_sets = self.g_final_filters * 2 ** np.arange(self.n_convs)
-        resize_size = self.data_size // (2 ** (self.n_convs - 1))
+        resize_size = self.data_size // (2 ** self.n_convs)
 
         input_dis = Input(shape=(self.data_size, self.data_size, self.data_ch))
         x_dis = input_dis
@@ -251,7 +261,7 @@ class anoGAN(object):
             n_iter = len(real_path) // self.batch_size
             g_flow = generator.flow_from_directory_fcn(
                     real_path, None,
-                    target_size=size, color_mode='rgb',
+                    target_size=size, color_mode=self.color_mode,
                     class_mode='categorical', class_palette=None,
                     batch_size=self.batch_size, shuffle=True, seed=None,
                     save_to_dir=None,
@@ -262,7 +272,7 @@ class anoGAN(object):
         else:
             ext = ['png', 'jpg', 'jpeg', 'bmp']
             images, _, _ = load_data(self.image_dir, ext=ext,
-                                     color_mode='color', dtype=np.float32,
+                                     color_mode=self.color_mode, dtype=np.float32,
                                      size=size, resize_type='ec',
                                      load_lbl=True, lbl_dir='lbl', lbl_suf='_lbl',)
             n_iter = len(images) // self.batch_size
