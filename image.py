@@ -52,10 +52,13 @@ def load_to_array(path, grayscale=False, target_size=None):
     color_mode = not grayscale
     if color_mode:
         array = cv2.imread(path, color_mode)[:, :, ::-1]
+        if target_size is not None and target_size != array.shape[0:2]:
+            array = cv2.resize(array, target_size)
     else:
-        array = cv2.imread(path, color_mode)[:, :, np.newaxis]
-    if target_size is not None:
-        array = cv2.resize(array, target_size)
+        array = cv2.imread(path, color_mode)
+        if target_size is not None and target_size != array.shape[0:2]:
+            array = cv2.resize(array, target_size)
+        array = array[:, :, np.newaxis]
     return array
 
 
