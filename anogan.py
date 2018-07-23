@@ -337,7 +337,10 @@ class anoGAN(object):
 
         return d, g
 
-    def detect(self, x, iterations=500):
+    def detect(self, x, yaml_path, iterations=500):
+
+        self._set_params(yaml_path)
+
         g = self.Generator_model()
         g.load_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(self.epoch)))
 

@@ -28,7 +28,7 @@ def main():
     images, labels = _mnist_data_load()
     ano = anogan.anoGAN()
     for i, (img, lbl) in enumerate(zip(images, labels)):
-        loss, detections = ano.detect(img)
+        loss, detections = ano.detect(img, './params.yaml')
         detections = ((detections + 1.) * 255. / 2.).astype(np.uint8)
         img = ((img + 1.) * 255. / 2.).astype(np.uint8)
         img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
