@@ -191,7 +191,7 @@ class anoGAN(object):
         return model
 
     def Feature_model(self, discriminator):
-        model = Model(inputs=discriminator.layer[0].input,
+        model = Model(inputs=discriminator.layers[0].input,
                       outputs=discriminator.layers[-10].output)
         self._set_trainable(model, trainable=False)
 
@@ -221,7 +221,6 @@ class anoGAN(object):
         size = (self.data_size, self.data_size)
 
         g = self.Generator_model()
-        g.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
         g.summary()
 
         d = self.Discriminator_model()
@@ -338,14 +337,20 @@ class anoGAN(object):
 
         return d, g
 
-    def detect(self, x, generator, discriminator, iterations=500):
+    def detect(self, x, iterations=500):
+        g = self.Generator_model()
+        g.load_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(self.epoch)))
+
+        d = self.Discriminator_model()
+        d.load_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(self.epoch)))
+
         z = np.random.uniform(0, 1, size=(1, self.latent_size))
 
-        feature = self.Feature_model(discriminator)
+        feature = self.Feature_model(d)
         feature.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
         feature.summary()
 
-        detector = self.Detector_mode(generator, discriminator)
+        detector = self.Detector_mode(g, d)
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
                          optimizer=self.d_optim(lr=self.d_lr))
         detector.summary()
@@ -353,7 +358,7 @@ class anoGAN(object):
         features = feature.predict(x)
 
         loss = detector.fit(z, [x, features], epochs=iterations, verbose=0)
-        detections = detector.predict(z)
+        detections, _ = detector.predict(z)
 
         loss = loss.history['loss'][-1]
 
