@@ -342,10 +342,10 @@ class anoGAN(object):
         self._set_params(yaml_path)
 
         g = self.Generator_model()
-        g.load_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(self.epoch)))
+        g.load_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(self.epoch - 1)))
 
         d = self.Discriminator_model()
-        d.load_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(self.epoch)))
+        d.load_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(self.epoch - 1)))
 
         z = np.random.uniform(0, 1, size=(1, self.latent_size))
 
