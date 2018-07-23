@@ -306,7 +306,7 @@ class anoGAN(object):
 
         print('pretraining')
         for ep in range(30):
-            print('Epoch: {}/{}'.format(ep + 1, self.epoch))
+            print('Epoch: {}/{}'.format(ep + 1, 30))
 
             progress_bar = Progbar(target=n_iter)
             random_idx = np.random.permutation(data_len)
