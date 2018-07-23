@@ -39,6 +39,7 @@ def main():
             dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_d.png'
             cv2.imwrite(join('./mnist_test/detect/', img_name), img)
             cv2.imwrite(join('./mnist_test/detect/', dt_name), detections)
+            print([img_name, loss])
             writer.writerow([img_name, loss])
 
 if __name__ == '__main__':
