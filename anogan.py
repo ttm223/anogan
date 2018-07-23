@@ -138,7 +138,8 @@ class anoGAN(object):
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
             x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
-            x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
+            # x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
+            x_gen = UpSampling2D((2, 2))(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         x_gen = BatchNormalization()(x_gen)
@@ -225,7 +226,7 @@ class anoGAN(object):
         size = (self.data_size, self.data_size)
 
         g = self.Generator_model()
-        g.compile(loss='binary_crossentropy', optimizer=self.g_optim(lr=self.g_lr))
+        g.compile(loss='mse', optimizer=self.g_optim(lr=self.g_lr))
         g.summary()
 
         d = self.Discriminator_model()
