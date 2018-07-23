@@ -168,11 +168,11 @@ class anoGAN(object):
         x_dis = Flatten()(x_dis)
         x_dis = Dense(resize_size * resize_size * filter_sets[-1])(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
-        # x_dis = Dropout(0.5)(x_dis)
+        x_dis = Dropout(0.5)(x_dis)
 
         x_dis = Dense(1024)(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
-        # x_dis = Dropout(0.5)(x_dis)
+        x_dis = Dropout(0.5)(x_dis)
 
         x_dis = Dense(1)(x_dis)
         output_dis = Activation('softmax')(x_dis)
@@ -186,6 +186,7 @@ class anoGAN(object):
         :return: gan model
         '''
         self._set_trainable(discriminator, trainable=False)
+        # discriminator.trainable = False
         input_gan = Input(shape=(self.latent_size,))
         x_gan = generator(input_gan)
         output_gan = discriminator(x_gan)
@@ -294,9 +295,9 @@ class anoGAN(object):
 
                 X = np.concatenate([real_img, fake_img], axis=0)
                 y = np.array([1.] * len(real_img) + [0.] * len(fake_img))
-
+                d.trainable = True
                 d_loss = d.train_on_batch(X, y)
-
+                d.trainable = False
                 g_loss = gan.train_on_batch(noise, np.array([1] * self.batch_size))
 
                 progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
