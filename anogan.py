@@ -163,6 +163,7 @@ class anoGAN(object):
         :return: discriminator model
         '''
         filter_sets = self.g_final_filters * 2 ** np.arange(self.n_convs)
+        first_dense_size = filter_sets[-1] * (self.data_size // self.n_convs) ** 2
 
         input_dis = Input(shape=(self.data_size, self.data_size, self.data_ch))
         x_dis = input_dis
@@ -173,8 +174,11 @@ class anoGAN(object):
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
         x_dis = Flatten()(x_dis)
+        x_dis = Dense(first_dense_size)(x_dis)
+        x_dis = LeakyReLU(alpha=0.2)(x_dis)
+        x_dis = Dropout(0.5)(x_dis)
 
-        x_dis = Dense(1024 * self.d_dense_coeff)(x_dis)
+        x_dis = Dense(1024)(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
         x_dis = Dropout(0.5)(x_dis)
 
