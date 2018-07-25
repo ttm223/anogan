@@ -35,7 +35,7 @@ def residual_loss(y_true, y_pred):
 
 class anoGAN(object):
 
-    param_names = ['batch_size', 'd_lr', 'd_optim',
+    param_names = ['batch_size', 'conv_up', 'd_lr', 'd_optim',
                    'data_ch', 'data_size', 'epoch',
                    'g_final_filter', 'g_lr',
                    'g_optim', 'image_dir', 'latent_size',
