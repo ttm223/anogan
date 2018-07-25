@@ -145,7 +145,7 @@ class anoGAN(object):
             if self.conv_up:
                 x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
             else:
-                x_gen = UpSampling2D(2, 2)(x_gen)
+                x_gen = UpSampling2D((2, 2))(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         x_gen = BatchNormalization()(x_gen)
