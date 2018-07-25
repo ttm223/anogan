@@ -46,6 +46,7 @@ class anoGAN(object):
     def __init__(self):
         self.batch_size = 16
         self.color_mode = 'rgb'
+        self.d_loss = 'binary_crossentropy'
         self.d_lr = 1e-4
         self.d_optim = Adam
         self.data_ch = 3
@@ -53,6 +54,7 @@ class anoGAN(object):
         self.epoch = 20
         self.flow_from_dir = True
         self.g_final_filters = 64
+        self.g_loss = 'binary_crossentropy'
         self.g_lr = 1e-4
         self.g_optim = Adam
         self.image_dir = None
@@ -225,11 +227,11 @@ class anoGAN(object):
         g.summary()
 
         d = self.Discriminator_model()
-        d.compile(loss='binary_crossentropy', optimizer=self.d_optim(lr=self.d_lr))
+        d.compile(loss=self.d_loss, optimizer=self.d_optim(lr=self.d_lr))
         d.summary()
 
         gan = self.GAN_model(generator=g, discriminator=d)
-        gan.compile(loss='binary_crossentropy', optimizer=self.g_optim(lr=self.g_lr))
+        gan.compile(loss=self.g_loss, optimizer=self.g_optim(lr=self.g_lr))
         gan.summary()
         self._set_trainable(d, trainable=True)
 
@@ -328,14 +330,12 @@ class anoGAN(object):
                 g_loss = gan.train_on_batch(noise, np.array([1.] * self.batch_size))
 
                 progress_bar.update(idx, values=[('g-loss', g_loss), ('d-loss', d_loss)])
-                if idx == n_iter - 1:
-                    np.save(join(self.save_dir, 'e{}.npy'.format(ep)), X)
 
             print('')
             # save weights per epoch for test
             if ep % 20 == 19:
-                g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep)), True)
-                d.save_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(ep)), True)
+                g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep + 1)), True)
+                d.save_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(ep + 1)), True)
                 img_save_dir = join(self.save_dir, 'gen_img', str(ep))
                 if not exists(img_save_dir):
                     os.makedirs(img_save_dir)
