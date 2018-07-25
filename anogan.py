@@ -46,6 +46,7 @@ class anoGAN(object):
     def __init__(self):
         self.batch_size = 16
         self.color_mode = 'rgb'
+        self.conv_up = True
         self.d_loss = 'binary_crossentropy'
         self.d_lr = 1e-4
         self.d_optim = Adam
@@ -141,7 +142,10 @@ class anoGAN(object):
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
             x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
-            x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
+            if self.conv_up:
+                x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
+            else:
+                x_gen = UpSampling2D(2, 2)(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         x_gen = BatchNormalization()(x_gen)
