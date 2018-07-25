@@ -10,7 +10,7 @@ import anogan
 
 
 def _mnist_data_load():
-    path = '/work/tsutsumi/open_datasets/mnist'
+    path = '/work/tsutsumi/open_datasets/mnist/test'
     lst = []
     labels = []
     for i in range(10):
