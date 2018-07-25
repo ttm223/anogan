@@ -38,7 +38,7 @@ def main():
         diff = np.abs(img - detections).astype(np.uint8)
         img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
         dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_dtc.png'
-        diff_name  str_num(i + 1, 2) + '_' + str(lbl) + '_diff.png'
+        diff_name  = str_num(i + 1, 2) + '_' + str(lbl) + '_diff.png'
         cv2.imwrite(join('./mnist_test/detect/', img_name), img)
         cv2.imwrite(join('./mnist_test/detect/', dt_name), detections)
         cv2.imwrite(join('./mnist_test/detect/', diff_name), diff)
