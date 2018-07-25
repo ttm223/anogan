@@ -174,11 +174,11 @@ class anoGAN(object):
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
         x_dis = Flatten()(x_dis)
-        x_dis = Dense(first_dense_size)(x_dis)
-        x_dis = LeakyReLU(alpha=0.2)(x_dis)
-        x_dis = Dropout(0.5)(x_dis)
+        # x_dis = Dense(first_dense_size)(x_dis)
+        # x_dis = LeakyReLU(alpha=0.2)(x_dis)
+        # x_dis = Dropout(0.5)(x_dis)
 
-        x_dis = Dense(1024)(x_dis)
+        x_dis = Dense(1024 * self.d_dense_coeff)(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
         x_dis = Dropout(0.5)(x_dis)
 
