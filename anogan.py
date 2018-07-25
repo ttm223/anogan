@@ -35,8 +35,8 @@ def residual_loss(y_true, y_pred):
 
 class anoGAN(object):
 
-    param_names = ['batch_size', 'conv_up', 'd_lr', 'd_optim',
-                   'data_ch', 'data_size', 'epoch',
+    param_names = ['batch_size', 'conv_up', 'd_dense_coeff', 'd_lr',
+                   'd_optim', 'data_ch', 'data_size', 'epoch',
                    'g_final_filter', 'g_lr',
                    'g_optim', 'image_dir', 'latent_size',
                    'loss_lambda', 'max_filters', 'n_convs',
@@ -47,6 +47,7 @@ class anoGAN(object):
         self.batch_size = 16
         self.color_mode = 'rgb'
         self.conv_up = True
+        self.d_dense_coeff = 1
         self.d_loss = 'binary_crossentropy'
         self.d_lr = 1e-4
         self.d_optim = Adam
@@ -173,7 +174,7 @@ class anoGAN(object):
 
         x_dis = Flatten()(x_dis)
 
-        x_dis = Dense(1024)(x_dis)
+        x_dis = Dense(1024 * self.d_dense_coeff)(x_dis)
         x_dis = LeakyReLU(alpha=0.2)(x_dis)
         x_dis = Dropout(0.5)(x_dis)
 
