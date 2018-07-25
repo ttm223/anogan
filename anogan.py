@@ -336,13 +336,13 @@ class anoGAN(object):
             if ep % 20 == 19:
                 g.save_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(ep + 1)), True)
                 d.save_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(ep + 1)), True)
-                img_save_dir = join(self.save_dir, 'gen_img', str(ep))
+                img_save_dir = join(self.save_dir, 'gen_img', str(ep + 1))
                 if not exists(img_save_dir):
                     os.makedirs(img_save_dir)
                     os.chmod(img_save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
                 for i, img in enumerate(fake_img):
                     img = ((img[:, :, 0] - 1.) * 255. / 2.).astype(np.uint8)
-                    img_name = 'ep' + str(ep) + '_' + str(i) + '.png'
+                    img_name = 'ep' + str(ep + 1) + '_' + str(i) + '.png'
                     cv2.imwrite(join(img_save_dir, img_name), img)
 
         return d, g
