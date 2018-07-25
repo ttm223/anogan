@@ -35,7 +35,7 @@ def residual_loss(y_true, y_pred):
 
 class anoGAN(object):
 
-    param_names = ['batch_size', 'conv_up', 'd_dense_coeff', 'd_lr',
+    param_names = ['batch_size', 'conv_up', 'd_dense_coeff', 'd_op_param',
                    'd_optim', 'data_ch', 'data_size', 'epoch',
                    'g_final_filter', 'g_lr',
                    'g_optim', 'image_dir', 'latent_size',
@@ -49,7 +49,7 @@ class anoGAN(object):
         self.conv_up = True
         self.d_dense_coeff = 1
         self.d_loss = 'binary_crossentropy'
-        self.d_lr = 1e-4
+        self.d_op_params = {'lr':1e-4}
         self.d_optim = Adam
         self.data_ch = 3
         self.data_size = 64
@@ -57,7 +57,7 @@ class anoGAN(object):
         self.flow_from_dir = True
         self.g_final_filters = 64
         self.g_loss = 'binary_crossentropy'
-        self.g_lr = 1e-4
+        self.g_op_params = {'lr':1e-4}
         self.g_optim = Adam
         self.image_dir = None
         self.latent_size = 100
@@ -232,11 +232,11 @@ class anoGAN(object):
         g.summary()
 
         d = self.Discriminator_model()
-        d.compile(loss=self.d_loss, optimizer=self.d_optim(lr=self.d_lr))
+        d.compile(loss=self.d_loss, optimizer=self.d_optim(**self.d_op_params))
         d.summary()
 
         gan = self.GAN_model(generator=g, discriminator=d)
-        gan.compile(loss=self.g_loss, optimizer=self.g_optim(lr=self.g_lr))
+        gan.compile(loss=self.g_loss, optimizer=self.g_optim(**self.g_op_params))
         gan.summary()
         self._set_trainable(d, trainable=True)
 
@@ -369,7 +369,7 @@ class anoGAN(object):
 
         detector = self.Detector_model(g, d)
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
-                         optimizer=self.d_optim(lr=self.d_lr))
+                         optimizer=self.d_optim(**self.d_op_params))
         detector.summary()
 
         features = feature.predict(x)
