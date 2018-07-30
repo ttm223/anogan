@@ -142,17 +142,21 @@ class anoGAN(object):
         x_gen = Activation('relu')(x_gen)
         x_gen = Reshape((resize_size, resize_size, filter_sets[0]))(x_gen)
 
-        for n in filter_sets:
-            x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
-            if self.g_batch_norm:
-                x_gen = BatchNormalization()(x_gen)
-            x_gen = Activation('relu')(x_gen)
+        for n in filter_sets[1:]:
             if self.conv_up:
                 x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
             else:
                 x_gen = UpSampling2D((2, 2))(x_gen)
+                x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
+            if self.g_batch_norm:
+                x_gen = BatchNormalization()(x_gen)
+            x_gen = Activation('relu')(x_gen)
 
-        x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
+        if self.conv_up:
+            x_gen = Conv2DTranspose(self.data_ch, (2, 2), strides=(2, 2), padding='same')(x_gen)
+        else:
+            x_gen = UpSampling2D((2, 2))(x_gen)
+            x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
         if self.g_batch_norm:
             x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('tanh')(x_gen)
