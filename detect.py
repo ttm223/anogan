@@ -3,8 +3,10 @@ import cv2
 import numpy as np
 import csv
 import time
+import os
 from glob import glob
-from os.path import join
+from os.path import exists, join
+from stat import S_IRUSR, S_IWUSR, S_IXUSR
 
 from misc import str_num
 import anogan
@@ -26,7 +28,10 @@ def _mnist_data_load():
     return images, labels
 
 
-def main():
+def main(save_path = './'):
+    if not exists(save_path):
+        os.makedirs(save_path)
+        os.chmod(save_path, S_IRUSR | S_IWUSR | S_IXUSR)
     images, labels = _mnist_data_load()
     ano = anogan.anoGAN()
     for i, (img, lbl) in enumerate(zip(images, labels)):
@@ -40,16 +45,18 @@ def main():
         detections = detections.astype(np.uint8)
         img_name = str_num(i + 1, 2) + '_' + str(lbl) + '.png'
         dt_name = str_num(i + 1, 2) + '_' + str(lbl) + '_dtc.png'
-        diff_name  = str_num(i + 1, 2) + '_' + str(lbl) + '_diff.png'
-        cv2.imwrite(join('./mnist_test/detect/', img_name), img)
-        cv2.imwrite(join('./mnist_test/detect/', dt_name), detections)
-        cv2.imwrite(join('./mnist_test/detect/', diff_name), diff)
+        diff_name = str_num(i + 1, 2) + '_' + str(lbl) + '_diff.png'
+        cv2.imwrite(join(save_path, img_name), img)
+        cv2.imwrite(join(save_path, dt_name), detections)
+        cv2.imwrite(join(save_path, diff_name), diff)
         t2 = time.time()
         proc_time = t2 - t1
         print([img_name, loss, proc_time])
-        with open('./mnist_test/detect/score.csv', 'a', newline='') as f:
+        with open(join(save_path, 'score.csv'), 'a', newline='') as f:
             writer = csv.writer(f, lineterminator='\n')
             writer.writerow([img_name, loss, proc_time])
 
 if __name__ == '__main__':
-    main()
+    save_path = input('input yaml file path: ')
+    print('set save dir: %s' % save_path)
+    main(save_path)
