@@ -35,8 +35,8 @@ def residual_loss(y_true, y_pred):
 
 class anoGAN(object):
 
-    param_names = ['batch_size', 'conv_up', 'd_dense_coeff', 'd_op_param',
-                   'd_optim', 'data_ch', 'data_size', 'epoch',
+    param_names = ['batch_norm', 'batch_size', 'conv_up', 'd_dense_coeff',
+                   'd_op_param', 'd_optim', 'data_ch', 'data_size', 'epoch',
                    'g_final_filter', 'g_lr',
                    'g_optim', 'image_dir', 'latent_size',
                    'loss_lambda', 'max_filters', 'n_convs',
@@ -44,6 +44,7 @@ class anoGAN(object):
     white_list = {'bmp', 'jpg', 'jpeg', 'png'}
 
     def __init__(self):
+        self.batch_norm = True
         self.batch_size = 16
         self.color_mode = 'rgb'
         self.conv_up = True
@@ -135,13 +136,15 @@ class anoGAN(object):
         x_gen = Activation('relu')(x_gen)
 
         x_gen = Dense(resize_size * resize_size * filter_sets[0])(x_gen)
-        x_gen = BatchNormalization()(x_gen)
+        if self.batch_norm:
+            x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('relu')(x_gen)
         x_gen = Reshape((resize_size, resize_size, filter_sets[0]))(x_gen)
 
         for n in filter_sets:
             x_gen = Conv2D(n, (5, 5), padding='same')(x_gen)
-            x_gen = BatchNormalization()(x_gen)
+            if self.batch_norm:
+                x_gen = BatchNormalization()(x_gen)
             x_gen = Activation('relu')(x_gen)
             if self.conv_up:
                 x_gen = Conv2DTranspose(n, (2, 2), strides=(2, 2), padding='same')(x_gen)
@@ -149,7 +152,8 @@ class anoGAN(object):
                 x_gen = UpSampling2D((2, 2))(x_gen)
 
         x_gen = Conv2D(self.data_ch, (5, 5), padding='same')(x_gen)
-        x_gen = BatchNormalization()(x_gen)
+        if self.batch_norm:
+            x_gen = BatchNormalization()(x_gen)
         x_gen = Activation('tanh')(x_gen)
 
         output_gen = x_gen
@@ -170,7 +174,8 @@ class anoGAN(object):
 
         for n in filter_sets:
             x_dis = Conv2D(n, (5, 5), strides=(2, 2), padding='same')(x_dis)
-            x_dis = BatchNormalization()(x_dis)
+            if self.batch_norm:
+                x_dis = BatchNormalization()(x_dis)
             x_dis = LeakyReLU(alpha=0.2)(x_dis)
 
         x_dis = Flatten()(x_dis)
