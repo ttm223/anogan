@@ -12,8 +12,7 @@ from misc import str_num
 import anogan
 
 
-def _mnist_data_load():
-    path = ''
+def _mnist_data_load(path):
     lst = []
     labels = []
     for i in range(10):
@@ -28,11 +27,11 @@ def _mnist_data_load():
     return images, labels
 
 
-def main(save_path = './'):
+def main(save_path='./', data_path='./'):
     if not exists(save_path):
         os.makedirs(save_path)
         os.chmod(save_path, S_IRUSR | S_IWUSR | S_IXUSR)
-    images, labels = _mnist_data_load()
+    images, labels = _mnist_data_load(data_path)
     ano = anogan.anoGAN()
     for i, (img, lbl) in enumerate(zip(images, labels)):
         t1 = time.time()
@@ -57,6 +56,8 @@ def main(save_path = './'):
             writer.writerow([img_name, loss, proc_time])
 
 if __name__ == '__main__':
-    save_path = input('input yaml file path: ')
+    save_path = input('input save path: ')
     print('set save dir: %s' % save_path)
-    main(save_path)
+    data_path = input('input test data path: ')
+    print('set test data dir: %s' % data_path)
+    main(save_path, data_path)
