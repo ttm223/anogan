@@ -415,7 +415,7 @@ class anoGAN(object):
 
         detector = self.Detector_model(g, d)
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
-                         optimizer=self.d_optim(**self.d_op_params))
+                         optimizer=self.g_optim(**self.g_op_params))
         detector.summary()
 
         features = feature.predict(x)
