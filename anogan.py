@@ -236,7 +236,25 @@ class anoGAN(object):
         model = Model(inputs=input_latent, outputs=[output_gen, output_fea])
 
         return model
-        
+
+    def Detector1D_model(self, generator, discriminator):
+        input_latent = Input(shape=(self.latent_size,))
+        x_latent = Reshape((1, self.latent_size))(input_latent)
+        x_latent = Conv1D(1, self.latent_size, padding='valid', activation='sigmoid')(x_latent)
+        x_latent = Reshape((self.latent_size,))(x_latent)
+
+        generator = Model(inputs=generator.layers[1].input, outputs=generator.layers[-1].output)
+        self._set_trainable(generator, trainable=False)
+
+        feature = self.Feature_model(discriminator)
+
+        output_gen = generator(x_latent)
+        output_fea = feature(output_gen)
+
+        model = Model(inputs=input_latent, outputs=[output_gen, output_fea])
+
+        return model
+
     def train(self, yaml_path):
 
         self._set_params(yaml_path)
@@ -396,7 +414,7 @@ class anoGAN(object):
 
         return loss, detections
 
-    def detect_tset(self, x, yaml_path, sub_dir, iterations=500, rand_input=True):
+    def detect_tset(self, x, yaml_path, sub_dir, iterations=500, rand_input=True, conv=True):
         self._set_params(yaml_path)
 
         g = self.Generator_model()
@@ -413,7 +431,10 @@ class anoGAN(object):
         feature = self.Feature_model(d)
         feature.summary()
 
-        detector = self.Detector_model(g, d)
+        if conv:
+            detector = self.Detector1D_model(g, d)
+        else:
+            detector = self.Detector_model(g, d)
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
                          optimizer=self.g_optim(**self.g_op_params))
         detector.summary()
