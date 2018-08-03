@@ -215,7 +215,7 @@ class anoGAN(object):
 
     def Feature_model(self, discriminator):
         model = Model(inputs=discriminator.layers[0].input,
-                      outputs=discriminator.layers[-10].output)
+                      outputs=discriminator.layers[-7].output)
         self._set_trainable(model, trainable=False)
 
         return model
