@@ -394,3 +394,46 @@ class anoGAN(object):
         loss = loss.history['loss'][-1]
 
         return loss, detections
+
+    def detect_tset(self, x, yaml_path, sub_dir, iterations=500, rand_input=True):
+        self._set_params(yaml_path)
+
+        g = self.Generator_model()
+        g.load_weights(join(self.save_dir, 'g_weights_e{}.h5'.format(self.epoch)))
+
+        d = self.Discriminator_model()
+        d.load_weights(join(self.save_dir, 'd_weights_e{}.h5'.format(self.epoch)))
+
+        if rand_input:
+            z = np.random.uniform(0, 1, size=(1, self.latent_size))
+        else:
+            z = np.array([0.5] * self.latent_size, dtype=np.float32).reshape((1, self.latent_size))
+
+        feature = self.Feature_model(d)
+        feature.summary()
+
+        detector = self.Detector_model(g, d)
+        detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
+                         optimizer=self.d_optim(**self.d_op_params))
+        detector.summary()
+
+        features = feature.predict(x)
+
+        save_dir = join(self.save_dir, 'detect_test', sub_dir)
+        if not exists(save_dir):
+            os.makedirs(save_dir)
+            os.chmod(save_dir, S_IRUSR | S_IWUSR | S_IXUSR)
+
+        for i in range(iterations):
+            loss = detector.train_on_batch(z, [x, features])
+            with open(join(save_dir, 'score.csv'), 'a', newline='') as f:
+                writer = csv.writer(f, lineterminator='\n')
+                writer.writerow([i, loss])
+            if i % 10 == 0:
+                save_path = join(save_dir, str(i) + '.png')
+                detections, _ = detector.predict(z)
+                detections = ((detections + 1.) * 255. / 2.).astype(np.uint8)
+                if detections.shape[-1] == 3:
+                    cv2.imwrite(save_path, detections[0, :, :, ::-1])
+                elif detections.shape[-1] == 1:
+                    cv2.imwrite(save_path, detections[0, :, :, 0])
