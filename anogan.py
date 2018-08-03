@@ -239,7 +239,7 @@ class anoGAN(object):
 
     def Detector1D_model(self, generator, discriminator):
         input_latent = Input(shape=(self.latent_size,))
-        x_latent = Reshape((1, self.latent_size))(input_latent)
+        x_latent = Reshape((self.latent_size, 1))(input_latent)
         x_latent = Conv1D(1, self.latent_size, padding='valid', activation='sigmoid')(x_latent)
         x_latent = Reshape((self.latent_size,))(x_latent)
 
