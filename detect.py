@@ -22,7 +22,7 @@ def _mnist_data_load(path):
     images = []
     for p in lst:
         images.append(cv2.imread(p, 0))
-    images = np.array(images, np.float32) / 255.
+    images = np.array(images, np.float32) * 2. / 255. - 1.
     images = images[:, :, :, np.newaxis]
     return images, labels
 
