@@ -389,7 +389,7 @@ class anoGAN(object):
 
         features = feature.predict(x)
 
-        loss = detector.fit(z, [x, features], epochs=iterations, verbose=0)
+        loss = detector.fit(z, [x, features], epochs=iterations, verbose=1)
         detections, _ = detector.predict(z)
 
         loss = loss.history['loss'][-1]
