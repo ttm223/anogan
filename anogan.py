@@ -386,6 +386,7 @@ class anoGAN(object):
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
                          optimizer=self.d_optim(lr=0.5))
         detector.summary()
+        K.set_learning_phase(0)
 
         features = feature.predict(x)
 
@@ -417,6 +418,7 @@ class anoGAN(object):
         detector.compile(loss=residual_loss, loss_weights=[1. - self.loss_lambda, self.loss_lambda],
                          optimizer=self.g_optim(lr=0.5))
         detector.summary()
+        K.set_learning_phase(0)
 
         features = feature.predict(x)
 
